@@ -442,6 +442,7 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
       >
+      <View className="px-4">
       {/* Header */}
       <View className="flex-row justify-between items-center mb-6">
         <View>
@@ -635,6 +636,7 @@ export default function HomeScreen() {
           </Text>
         </View>
       </View>
+      </View>
       
       <NursingModal
         visible={showNursingModal}
@@ -684,5 +686,6 @@ export default function HomeScreen() {
       
       <Toast />
     </View>
+    
   );
 }

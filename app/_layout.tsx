@@ -67,9 +67,6 @@ export default function RootLayout() {
         <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: {
-          backgroundColor: '#0C0B10',
-        },
       }}
     />
       </StyledView>
