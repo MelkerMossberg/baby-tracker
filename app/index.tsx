@@ -11,6 +11,7 @@ import SleepModal from '../features/sleep/SleepModal';
 import BreastSelectionModal from '../components/BreastSelectionModal';
 import ActiveNursingCard from '../features/nursing/ActiveNursingCard';
 import BabySwitcherModal from '../components/BabySwitcherModal';
+import AllEventsModal from '../components/AllEventsModal';
 
 export default function HomeScreen() {
   // Suppress React Native touch warnings in development
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const [isNursingInProgress, setIsNursingInProgress] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('0m');
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [todaysSummary, setTodaysSummary] = useState({
     feedings: 0,
     sleepTime: '0h 0m',
@@ -43,6 +45,7 @@ export default function HomeScreen() {
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showBreastSelectionModal, setShowBreastSelectionModal] = useState(false);
   const [showBabySwitcherModal, setShowBabySwitcherModal] = useState(false);
+  const [showAllEventsModal, setShowAllEventsModal] = useState(false);
   const [currentEventType, setCurrentEventType] = useState<EventType>('diaper');
   const [currentEventTitle, setCurrentEventTitle] = useState('');
   const [currentNursingSide, setCurrentNursingSide] = useState<NursingSide>('left');
@@ -158,6 +161,7 @@ export default function HomeScreen() {
       if (isUsingTestData) {
         // Set default empty state for test data
         setRecentEvents([]);
+        setAllEvents([]);
         setLastNursingSide(undefined);
         setTodaysSummary({
           feedings: 0,
@@ -168,8 +172,12 @@ export default function HomeScreen() {
       }
 
       // Now database should be working with mock data
-      const events = await eventTracker.getRecentEvents(targetBabyId, 5);
-      setRecentEvents(events);
+      const allEventsData = await eventTracker.getRecentEvents(targetBabyId, 1000);
+      setAllEvents(allEventsData);
+      
+      // Show only the first 5 for recent events preview
+      const recentEventsPreview = allEventsData.slice(0, 5);
+      setRecentEvents(recentEventsPreview);
 
       // Get last nursing side
       const lastNursingEvents = await eventTracker.getEventsByType(targetBabyId, 'nursing', 1);
@@ -197,6 +205,7 @@ export default function HomeScreen() {
       console.error('Error loading data:', error);
       // Set default empty state on error
       setRecentEvents([]);
+      setAllEvents([]);
       setLastNursingSide(undefined);
       setTodaysSummary({
         feedings: 0,
@@ -474,31 +483,54 @@ export default function HomeScreen() {
       </Text>
 
       {/* Recent Activity */}
-      <Text className="text-lg text-gray-400 mb-4" style={{ fontFamily: 'Inter' }}>
-        Recent activity
-      </Text>
-      <View className="rounded-2xl p-4 shadow-lg mb-8" style={{ backgroundColor: '#171021' }}>
+      <View className="flex-row justify-between items-center mb-4">
+        <Text className="text-lg text-gray-400" style={{ fontFamily: 'Inter' }}>
+          Recent activity
+        </Text>
+        <TouchableOpacity onPress={() => setShowAllEventsModal(true)} activeOpacity={0.7}>
+          <Text className="text-blue-400 text-sm" style={{ fontFamily: 'Inter' }}>
+            All events
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity 
+        className="rounded-2xl p-4 shadow-lg mb-8" 
+        style={{ backgroundColor: '#171021' }}
+        onPress={() => allEvents.length > 5 ? setShowAllEventsModal(true) : undefined}
+        activeOpacity={allEvents.length > 5 ? 0.7 : 1}
+      >
         {recentEvents.length === 0 ? (
           <Text className="text-gray-400 text-center" style={{ fontFamily: 'Inter' }}>
             No recent activity
           </Text>
         ) : (
-          recentEvents.map((event, index) => (
-            <View 
-              key={event.id} 
-              className={`flex-row justify-between items-center ${index < recentEvents.length - 1 ? 'mb-4' : ''}`}
-            >
-              <Text className="text-white" style={{ fontFamily: 'Inter' }}>
-                {getEventDisplayName(event.type)}
-                {event.duration && ` (${formatDuration(event.duration)})`}
-              </Text>
-              <Text className="text-gray-400 text-sm" style={{ fontFamily: 'Inter' }}>
-                {formatEventTime(event.timestamp)}
-              </Text>
-            </View>
-          ))
+          <>
+            {recentEvents.map((event, index) => (
+              <View 
+                key={event.id} 
+                className={`flex-row justify-between items-center ${index < recentEvents.length - 1 ? 'mb-4' : ''}`}
+              >
+                <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+                  {getEventDisplayName(event.type)}
+                  {event.duration && ` (${formatDuration(event.duration)})`}
+                </Text>
+                <Text className="text-gray-400 text-sm" style={{ fontFamily: 'Inter' }}>
+                  {formatEventTime(event.timestamp)}
+                </Text>
+              </View>
+            ))}
+            
+            {allEvents.length > 5 && (
+              <View className="mt-3 pt-3 border-t border-gray-600">
+                <Text className="text-blue-400 text-sm text-center" style={{ fontFamily: 'Inter' }}>
+                  Show more ({allEvents.length - 5} more events)
+                </Text>
+              </View>
+            )}
+          </>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* Track */}
       <Text className="text-lg text-gray-400 mb-4" style={{ fontFamily: 'Inter' }}>
@@ -641,6 +673,12 @@ export default function HomeScreen() {
         onSelectBaby={handleBabySwitch}
         babies={availableBabies}
         currentBabyId={currentBaby?.id || ''}
+      />
+
+      <AllEventsModal
+        visible={showAllEventsModal}
+        onClose={() => setShowAllEventsModal(false)}
+        babyId={currentBaby?.id || ''}
       />
       </ScrollView>
       
