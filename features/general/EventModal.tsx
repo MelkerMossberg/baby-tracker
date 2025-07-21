@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
-import { EventType } from '../types';
+import { EventType } from '../../types';
 
 interface EventModalProps {
   visible: boolean;

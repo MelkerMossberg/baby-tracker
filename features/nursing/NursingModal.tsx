@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { NursingSide } from '../types';
+import { NursingSide } from '../../types';
+import { formatDuration } from '../../utils/time';
 
 interface NursingModalProps {
   visible: boolean;
@@ -49,19 +50,6 @@ export default function NursingModal({ visible, onClose, onSave, currentSide, el
     }
   }, [hours, minutes, seconds]);
 
-  const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m`;
-    }
-    return `${remainingSeconds}s`;
-  };
 
   const handleSave = () => {
     onSave(selectedSide, notes, durationSeconds);

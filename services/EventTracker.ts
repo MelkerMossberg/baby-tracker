@@ -1,5 +1,6 @@
 import { Event, EventType, NursingSide, NursingEvent } from '../types/models';
 import { databaseService } from './database';
+import { formatDuration } from '../utils/time';
 
 export interface ActiveNursingSession {
   eventId: string;
@@ -219,17 +220,7 @@ class EventTracker {
   }
 
   formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m`;
-    }
-    return `${remainingSeconds}s`;
+    return formatDuration(seconds);
   }
 
   getElapsedTime(): string {
@@ -240,6 +231,10 @@ class EventTracker {
     const now = new Date();
     const elapsed = Math.floor((now.getTime() - this.activeNursingSession.startTime.getTime()) / 1000);
     return this.formatDuration(elapsed);
+  }
+
+  canLogEvents(babyId: string): boolean {
+    return !babyId.includes('test-');
   }
 }
 

@@ -3,14 +3,32 @@ import { View, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-na
 import Toast from 'react-native-toast-message';
 import { eventTracker, initializeDummyData, DUMMY_BABY_ID, databaseService } from '../services';
 import { Event, EventType, NursingSide, BabyProfile } from '../types';
-import NursingModal from '../components/NursingModal';
-import EventModal from '../components/EventModal';
-import SleepModal from '../components/SleepModal';
+import { formatDuration } from '../utils/time';
+import { getEventDisplayName } from '../utils/events';
+import NursingModal from '../features/nursing/NursingModal';
+import EventModal from '../features/general/EventModal';
+import SleepModal from '../features/sleep/SleepModal';
 import BreastSelectionModal from '../components/BreastSelectionModal';
-import ActiveNursingCard from '../components/ActiveNursingCard';
+import ActiveNursingCard from '../features/nursing/ActiveNursingCard';
 import BabySwitcherModal from '../components/BabySwitcherModal';
 
 export default function HomeScreen() {
+  // Suppress React Native touch warnings in development
+  React.useEffect(() => {
+    if (__DEV__) {
+      const originalWarn = console.warn;
+      console.warn = (...args) => {
+        if (args[0]?.includes?.('Cannot find single active touch')) {
+          return; // Suppress this specific warning
+        }
+        originalWarn(...args);
+      };
+      return () => {
+        console.warn = originalWarn;
+      };
+    }
+  }, []);
+
   const [isNursingInProgress, setIsNursingInProgress] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('0m');
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
@@ -135,7 +153,7 @@ export default function HomeScreen() {
       const targetBabyId = babyId || currentBaby?.id || DUMMY_BABY_ID;
       
       // Check if we're using fallback test data
-      const isUsingTestData = targetBabyId.includes('test-');
+      const isUsingTestData = !eventTracker.canLogEvents(targetBabyId);
       
       if (isUsingTestData) {
         // Set default empty state for test data
@@ -213,7 +231,7 @@ export default function HomeScreen() {
       }
       
       // Only block if using fallback test data (not mock database)
-      if (currentBaby.id.includes('test-')) {
+      if (!eventTracker.canLogEvents(currentBaby.id)) {
         Alert.alert('Info', 'Nursing session tracking is not available with test data.');
         return;
       }
@@ -263,7 +281,7 @@ export default function HomeScreen() {
       Toast.show({
         type: 'success',
         text1: 'Nursing Complete',
-        text2: `${eventTracker.formatDuration(durationSeconds)} session logged`
+        text2: `${formatDuration(durationSeconds)} session logged`
       });
     } catch (error) {
       console.error('Error saving nursing session:', error);
@@ -289,7 +307,7 @@ export default function HomeScreen() {
       }
       
       // Only block if using fallback test data (not mock database)
-      if (currentBaby.id.includes('test-')) {
+      if (!eventTracker.canLogEvents(currentBaby.id)) {
         Alert.alert('Info', 'Event logging is not available with test data.');
         return;
       }
@@ -315,7 +333,7 @@ export default function HomeScreen() {
       }
       
       // Only block if using fallback test data (not mock database)
-      if (currentBaby.id.includes('test-')) {
+      if (!eventTracker.canLogEvents(currentBaby.id)) {
         Alert.alert('Info', 'Sleep logging is not available with test data.');
         return;
       }
@@ -326,7 +344,7 @@ export default function HomeScreen() {
       Toast.show({
         type: 'success',
         text1: 'Sleep Logged',
-        text2: `${eventTracker.formatDuration(duration)} session saved`
+        text2: `${formatDuration(duration)} session saved`
       });
     } catch (error) {
       console.error('Error saving sleep event:', error);
@@ -358,7 +376,7 @@ export default function HomeScreen() {
       const duration = Math.floor((now.getTime() - activeSession.startTime.getTime()) / 1000);
       setStoppedNursingDuration(duration);
       // Freeze the displayed time
-      setElapsedTime(eventTracker.formatDuration(duration));
+      setElapsedTime(formatDuration(duration));
       // Actually stop the nursing session to prevent background counting
       try {
         await eventTracker.stopNursingSession();
@@ -392,17 +410,6 @@ export default function HomeScreen() {
     return `${diffMins}m ago`;
   };
 
-  const getEventDisplayName = (type: EventType): string => {
-    const names: Record<EventType, string> = {
-      nursing: 'Nursing',
-      sleep: 'Sleep',
-      diaper: 'Diaper change',
-      pumping: 'Pumping',
-      bottle: 'Bottle feed',
-      solids: 'Solid food'
-    };
-    return names[type];
-  };
 
   if (isLoading) {
     return (
@@ -417,6 +424,8 @@ export default function HomeScreen() {
       <ScrollView 
         className="flex-1" 
         contentContainerStyle={{ padding: 16 }}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
       >
       {/* Header */}
       <View className="flex-row justify-between items-center mb-6">
@@ -427,13 +436,20 @@ export default function HomeScreen() {
           <TouchableOpacity 
             className="flex-row items-center mt-1"
             onPress={() => setShowBabySwitcherModal(true)}
+            activeOpacity={0.7}
           >
             <Text className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>
               ▼ Focused on {currentBaby?.name || (availableBabies.length === 0 ? 'No babies found' : 'Loading...')}
             </Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center">
+        <TouchableOpacity 
+          className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center"
+          onPress={() => {
+            // TODO: Implement account menu
+          }}
+          activeOpacity={0.7}
+        >
           <Image 
             source={require('../assets/img/icons/account.png')} 
             className="w-6 h-6"
@@ -474,7 +490,7 @@ export default function HomeScreen() {
             >
               <Text className="text-white" style={{ fontFamily: 'Inter' }}>
                 {getEventDisplayName(event.type)}
-                {event.duration && ` (${eventTracker.formatDuration(event.duration)})`}
+                {event.duration && ` (${formatDuration(event.duration)})`}
               </Text>
               <Text className="text-gray-400 text-sm" style={{ fontFamily: 'Inter' }}>
                 {formatEventTime(event.timestamp)}

@@ -168,6 +168,18 @@ export async function initializeDummyData(): Promise<void> {
   }
 }
 
+export async function clearEventsForBaby(babyId: string): Promise<void> {
+  try {
+    const events = await databaseService.getEventsForBaby(babyId);
+    for (const event of events) {
+      await databaseService.deleteEvent(event.id);
+    }
+  } catch (error) {
+    console.error('Error clearing events for baby:', error);
+    throw error;
+  }
+}
+
 export async function clearAllData(): Promise<void> {
   try {
     const events = await databaseService.getEventsForBaby(DUMMY_BABY_ID);

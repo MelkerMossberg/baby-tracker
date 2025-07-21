@@ -2,11 +2,13 @@ import * as SQLite from 'expo-sqlite';
 import { BabyProfile, User, Event } from '../types/models';
 import { MockDatabaseService } from './mockDatabase';
 
-// Debug: Log SQLite object to see what's available
-console.log('SQLite object:', SQLite);
-console.log('SQLite keys:', Object.keys(SQLite));
-console.log('openDatabaseAsync type:', typeof SQLite.openDatabaseAsync);
-console.log('openDatabaseAsync function:', SQLite.openDatabaseAsync?.toString?.());
+const USE_MOCK_DB = true;
+
+// Debug: Log SQLite object to see what's available (disabled for production)
+// console.log('SQLite object:', SQLite);
+// console.log('SQLite keys:', Object.keys(SQLite));
+// console.log('openDatabaseAsync type:', typeof SQLite.openDatabaseAsync);
+// console.log('openDatabaseAsync function:', SQLite.openDatabaseAsync?.toString?.());
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -54,14 +56,22 @@ class DatabaseService {
     this.isInitializing = true;
 
     try {
-      // Skip SQLite entirely and go straight to mock database
-      // This avoids the path processing issues in React Native
-      console.log('🔄 Using mock database to avoid SQLite initialization issues...');
-      this.mockDb = new MockDatabaseService();
-      await this.mockDb.initialize();
-      this.useMockDb = true;
-      this.isInitialized = true;
-      console.log('✅ Mock database initialization complete');
+      if (USE_MOCK_DB) {
+        // Skip SQLite entirely and go straight to mock database
+        // This avoids the path processing issues in React Native
+        this.mockDb = new MockDatabaseService();
+        await this.mockDb.initialize();
+        this.useMockDb = true;
+        this.isInitialized = true;
+        // Mock database initialization complete
+      } else {
+        // Use SQLite database
+        const safeName = this.getSafeDbName();
+        this.db = await SQLite.openDatabaseAsync(safeName);
+        await this.createTables();
+        this.useMockDb = false;
+        this.isInitialized = true;
+      }
     } catch (error) {
       console.error('❌ Database initialization failed:', error);
       throw new Error('Database initialization failed');
@@ -74,10 +84,8 @@ class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     try {
-      console.log('🔧 Setting up database pragmas...');
       await this.db.execAsync('PRAGMA journal_mode = WAL;');
       
-      console.log('🔧 Creating baby_profiles table...');
       await this.db.execAsync(`CREATE TABLE IF NOT EXISTS baby_profiles (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -85,7 +93,6 @@ class DatabaseService {
         share_code TEXT UNIQUE NOT NULL
       );`);
       
-      console.log('🔧 Creating users table...');
       await this.db.execAsync(`CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -93,7 +100,6 @@ class DatabaseService {
         linked_babies TEXT NOT NULL DEFAULT '[]'
       );`);
       
-      console.log('🔧 Creating events table...');
       await this.db.execAsync(`CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         type TEXT CHECK(type IN ('nursing', 'sleep', 'diaper', 'pumping', 'bottle', 'solids')) NOT NULL,
@@ -105,11 +111,8 @@ class DatabaseService {
         FOREIGN KEY(baby_id) REFERENCES baby_profiles(id)
       );`);
       
-      console.log('🔧 Creating indexes...');
       await this.db.execAsync('CREATE INDEX IF NOT EXISTS idx_events_baby_id ON events(baby_id);');
       await this.db.execAsync('CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);');
-      
-      console.log('✅ All tables and indexes created successfully');
     } catch (error) {
       console.error('❌ Error creating tables:', error);
       console.error('Error details:', error?.message);

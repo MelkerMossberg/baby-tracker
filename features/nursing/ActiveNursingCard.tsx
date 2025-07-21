@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { NursingSide } from '../types';
+import { NursingSide } from '../../types';
 
 interface ActiveNursingCardProps {
   elapsedTime: string;
