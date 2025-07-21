@@ -32,13 +32,20 @@ export async function initializeDummyData(): Promise<void> {
   try {
     console.log('🔄 Starting database initialization...');
     
-    // Initialize database service (with automatic fallback to mock)
+    // Initialize database service (now uses mock database)
     await databaseService.initialize();
     console.log('✅ Database initialized successfully');
 
     console.log('🔍 Checking for existing baby profiles...');
-    const existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
-    const existingBaby2 = await databaseService.getBabyProfile(DUMMY_BABY_2_ID);
+    let existingBaby: BabyProfile | null = null;
+    let existingBaby2: BabyProfile | null = null;
+    
+    try {
+      existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
+      existingBaby2 = await databaseService.getBabyProfile(DUMMY_BABY_2_ID);
+    } catch (error) {
+      console.log('🔍 No existing babies found, will create new ones');
+    }
     
     console.log('🔍 Existing baby 1 (Otis):', existingBaby ? 'Found' : 'Not found');
     console.log('🔍 Existing baby 2 (Luna):', existingBaby2 ? 'Found' : 'Not found');
@@ -46,8 +53,12 @@ export async function initializeDummyData(): Promise<void> {
     if (existingBaby && existingBaby2) {
       console.log('✅ All dummy data already exists, skipping creation');
       // Still verify they are retrievable
-      const allBabies = await databaseService.getAllBabyProfiles();
-      console.log('✅ Verification: Found', allBabies.length, 'babies total');
+      try {
+        const allBabies = await databaseService.getAllBabyProfiles();
+        console.log('✅ Verification: Found', allBabies.length, 'babies total');
+      } catch (error) {
+        console.log('⚠️ Could not verify existing babies, will recreate');
+      }
       return;
     }
 

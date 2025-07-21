@@ -38,15 +38,9 @@ export default function BreastSelectionModal({ visible, onClose, onSelectSide, l
               style={{ backgroundColor: '#22543D' }}
               onPress={() => handleSideSelection('left')}
             >
-              <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>Left</Text>
-              {lastNursingSide === 'left' && (
-                <Text 
-                  className="text-white mt-1" 
-                  style={{ fontFamily: 'Inter', fontSize: 12, opacity: 0.6 }}
-                >
-                  Last time
-                </Text>
-              )}
+              <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>
+                Left{lastNursingSide === 'left' ? ' (Last)' : ''}
+              </Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -54,15 +48,9 @@ export default function BreastSelectionModal({ visible, onClose, onSelectSide, l
               style={{ backgroundColor: '#22543D' }}
               onPress={() => handleSideSelection('right')}
             >
-              <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>Right</Text>
-              {lastNursingSide === 'right' && (
-                <Text 
-                  className="text-white mt-1" 
-                  style={{ fontFamily: 'Inter', fontSize: 12, opacity: 0.6 }}
-                >
-                  Last time
-                </Text>
-              )}
+              <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>
+                Right{lastNursingSide === 'right' ? ' (Last)' : ''}
+              </Text>
             </TouchableOpacity>
           </View>
 

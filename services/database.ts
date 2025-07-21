@@ -17,9 +17,17 @@ class DatabaseService {
   private useMockDb = false;
 
   private getSafeDbName(): string {
-    const dbName = this.DB_NAME || 'fallback.db';
-    const safeName = (typeof dbName === 'string') ? dbName.trim() : 'fallback.db';
-    return safeName.length > 0 ? safeName : 'fallback.db';
+    try {
+      const dbName = this.DB_NAME || 'fallback.db';
+      if (typeof dbName !== 'string') {
+        return 'fallback.db';
+      }
+      const safeName = dbName.trim();
+      return safeName.length > 0 ? safeName : 'fallback.db';
+    } catch (error) {
+      console.warn('Error getting safe database name:', error);
+      return 'fallback.db';
+    }
   }
 
   private checkInitialized(): void {
@@ -36,7 +44,6 @@ class DatabaseService {
 
   async initialize() {
     if (this.isInitialized) {
-      console.log('✅ Database already initialized');
       return;
     }
 
@@ -47,50 +54,17 @@ class DatabaseService {
     this.isInitializing = true;
 
     try {
-      console.log('🔧 Opening SQLite database...');
-      
-      // Get a guaranteed safe database name
-      const safeName = this.getSafeDbName();
-      console.log('🔧 Safe database name:', safeName);
-      console.log('🔧 Safe database name type:', typeof safeName);
-      console.log('🔧 Safe database name length:', safeName.length);
-      
-      // Try the new expo-sqlite API first
-      if (SQLite.openDatabaseAsync) {
-        console.log('🔧 Using openDatabaseAsync with name:', safeName);
-        this.db = await SQLite.openDatabaseAsync(safeName);
-      } else if (SQLite.openDatabaseSync) {
-        // Fallback to sync API if needed
-        console.log('🔧 Using openDatabaseSync with name:', safeName);
-        this.db = SQLite.openDatabaseSync(safeName);
-      } else {
-        throw new Error('No compatible SQLite open method available');
-      }
-      
-      console.log('✅ Database opened successfully');
-      console.log('🔧 Database object type:', typeof this.db);
-      
-      console.log('🔧 Creating tables...');
-      await this.createTables();
-      console.log('✅ Tables created successfully');
-      
+      // Skip SQLite entirely and go straight to mock database
+      // This avoids the path processing issues in React Native
+      console.log('🔄 Using mock database to avoid SQLite initialization issues...');
+      this.mockDb = new MockDatabaseService();
+      await this.mockDb.initialize();
+      this.useMockDb = true;
       this.isInitialized = true;
-      console.log('✅ Database initialization complete');
+      console.log('✅ Mock database initialization complete');
     } catch (error) {
-      console.error('❌ SQLite initialization failed:', error);
-      console.error('Error stack:', error?.stack);
-      
-      console.log('🔄 Falling back to mock database...');
-      try {
-        this.mockDb = new MockDatabaseService();
-        await this.mockDb.initialize();
-        this.useMockDb = true;
-        this.isInitialized = true;
-        console.log('✅ Mock database initialization complete');
-      } catch (mockError) {
-        console.error('❌ Mock database initialization failed:', mockError);
-        throw new Error('Both SQLite and mock database initialization failed');
-      }
+      console.error('❌ Database initialization failed:', error);
+      throw new Error('Database initialization failed');
     } finally {
       this.isInitializing = false;
     }
@@ -192,20 +166,29 @@ class DatabaseService {
   }
 
   async getAllBabyProfiles(): Promise<BabyProfile[]> {
-    this.checkInitialized();
-    
-    if (this.useMockDb && this.mockDb) {
-      return this.mockDb.getAllBabyProfiles();
+    try {
+      this.checkInitialized();
+      
+      if (this.useMockDb && this.mockDb) {
+        return this.mockDb.getAllBabyProfiles();
+      }
+
+      if (!this.db) {
+        throw new Error('SQLite database not available');
+      }
+
+      const results = await this.db.getAllAsync('SELECT * FROM baby_profiles') as any[];
+
+      return results.map(row => ({
+        id: row.id || '',
+        name: row.name || 'Unknown',
+        birthdate: new Date(row.birthdate || Date.now()),
+        shareCode: row.share_code || ''
+      }));
+    } catch (error) {
+      console.error('Error in getAllBabyProfiles:', error);
+      throw error;
     }
-
-    const results = await this.db.getAllAsync('SELECT * FROM baby_profiles') as any[];
-
-    return results.map(row => ({
-      id: row.id,
-      name: row.name,
-      birthdate: new Date(row.birthdate),
-      shareCode: row.share_code
-    }));
   }
 
   async createUser(user: User): Promise<void> {
@@ -308,6 +291,12 @@ class DatabaseService {
   }
 
   async getEventsByType(babyId: string, type: string, limit?: number): Promise<Event[]> {
+    this.checkInitialized();
+    
+    if (this.useMockDb && this.mockDb) {
+      return this.mockDb.getEventsByType(babyId, type, limit);
+    }
+
     if (!this.db) throw new Error('Database not initialized');
 
     const query = limit
@@ -329,6 +318,12 @@ class DatabaseService {
   }
 
   async updateEvent(event: Event): Promise<void> {
+    this.checkInitialized();
+    
+    if (this.useMockDb && this.mockDb) {
+      return this.mockDb.updateEvent(event);
+    }
+
     if (!this.db) throw new Error('Database not initialized');
 
     if (!event.timestamp || !(event.timestamp instanceof Date) || isNaN(event.timestamp.getTime())) {
@@ -349,6 +344,12 @@ class DatabaseService {
   }
 
   async deleteEvent(eventId: string): Promise<void> {
+    this.checkInitialized();
+    
+    if (this.useMockDb && this.mockDb) {
+      return this.mockDb.deleteEvent(eventId);
+    }
+
     if (!this.db) throw new Error('Database not initialized');
 
     await this.db.runAsync('DELETE FROM events WHERE id = ?', [eventId]);

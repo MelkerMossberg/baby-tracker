@@ -53,6 +53,9 @@ class EventTracker {
 
     await databaseService.createEvent(event);
 
+    // Store as last created event for potential duration updates
+    this.lastCreatedEvent = event;
+
     this.activeNursingSession = null;
 
     return event;
@@ -147,31 +150,72 @@ class EventTracker {
   }
 
   async getRecentEvents(babyId: string, limit: number = 10): Promise<Event[]> {
-    return databaseService.getEventsForBaby(babyId, limit);
+    try {
+      return await databaseService.getEventsForBaby(babyId, limit);
+    } catch (error) {
+      console.warn('Unable to get recent events, database not ready:', error);
+      return [];
+    }
   }
 
   async getEventsByType(babyId: string, type: EventType, limit?: number): Promise<Event[]> {
-    return databaseService.getEventsByType(babyId, type, limit);
+    try {
+      return await databaseService.getEventsByType(babyId, type, limit);
+    } catch (error) {
+      console.warn('Unable to get events by type, database not ready:', error);
+      return [];
+    }
   }
 
   async getTodaysEvents(babyId: string): Promise<Event[]> {
-    const events = await databaseService.getEventsForBaby(babyId);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return events.filter(event => {
-      const eventDate = new Date(event.timestamp);
-      eventDate.setHours(0, 0, 0, 0);
-      return eventDate.getTime() === today.getTime();
-    });
+    try {
+      const events = await databaseService.getEventsForBaby(babyId);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      return events.filter(event => {
+        const eventDate = new Date(event.timestamp);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === today.getTime();
+      });
+    } catch (error) {
+      console.warn('Unable to get today\'s events, database not ready:', error);
+      return [];
+    }
   }
 
   async updateEvent(event: Event): Promise<void> {
     await databaseService.updateEvent(event);
+    // Update lastCreatedEvent if it's the same event being updated
+    if (this.lastCreatedEvent && this.lastCreatedEvent.id === event.id) {
+      this.lastCreatedEvent = event;
+    }
   }
 
   async deleteEvent(eventId: string): Promise<void> {
     await databaseService.deleteEvent(eventId);
+  }
+
+  private lastCreatedEvent: Event | null = null;
+
+  getLastCreatedEvent(): Event | null {
+    return this.lastCreatedEvent;
+  }
+
+  async updateEventDuration(eventId: string, durationSeconds: number): Promise<void> {
+    try {
+      // Get the event from database
+      const events = await databaseService.getEventsForBaby('', 1000); // Get many to find the right one
+      const event = events.find(e => e.id === eventId);
+      
+      if (event) {
+        const updatedEvent = { ...event, duration: durationSeconds };
+        await databaseService.updateEvent(updatedEvent);
+        this.lastCreatedEvent = updatedEvent;
+      }
+    } catch (error) {
+      console.error('Error updating event duration:', error);
+    }
   }
 
   formatDuration(seconds: number): string {

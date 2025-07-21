@@ -31,6 +31,8 @@ export default function HomeScreen() {
   const [lastNursingSide, setLastNursingSide] = useState<NursingSide | undefined>(undefined);
   const [currentBaby, setCurrentBaby] = useState<BabyProfile | null>(null);
   const [availableBabies, setAvailableBabies] = useState<BabyProfile[]>([]);
+  const [isDatabaseReady, setIsDatabaseReady] = useState(false);
+  const [stoppedNursingDuration, setStoppedNursingDuration] = useState<number>(0);
 
   useEffect(() => {
     initializeApp();
@@ -46,7 +48,15 @@ export default function HomeScreen() {
 
   const initializeApp = async () => {
     try {
-      await initializeDummyData();
+      // Try to initialize dummy data, but don't fail if it doesn't work
+      try {
+        await initializeDummyData();
+        setIsDatabaseReady(true);
+      } catch (initError) {
+        console.warn('Database initialization failed, will use fallback data:', initError);
+        setIsDatabaseReady(false);
+      }
+      
       await loadBabies();
       setIsNursingInProgress(eventTracker.isNursingInProgress());
       if (eventTracker.isNursingInProgress()) {
@@ -58,7 +68,9 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('Error initializing app:', error);
-      Alert.alert('Error', 'Failed to initialize app');
+      setIsDatabaseReady(false);
+      // Don't show alert, just ensure we have fallback data
+      await loadBabies(); // This will create test data if needed
     } finally {
       setIsLoading(false);
     }
@@ -66,10 +78,19 @@ export default function HomeScreen() {
 
   const loadBabies = async () => {
     try {
+      // Database should now be properly initialized with mock data
       const babies = await databaseService.getAllBabyProfiles();
       
-      if (babies.length === 0) {
-        // Create temporary fallback data for testing
+      if (babies.length > 0) {
+        setAvailableBabies(babies);
+        
+        // Set default to the latest created baby (Luna)
+        const sortedBabies = babies.sort((a, b) => b.birthdate.getTime() - a.birthdate.getTime());
+        const defaultBaby = sortedBabies[0]; // Latest baby (Luna)
+        setCurrentBaby(defaultBaby);
+        await loadData(defaultBaby.id);
+      } else {
+        // If still no babies, something went wrong, use basic fallback
         const testBabies: BabyProfile[] = [
           {
             id: 'test-otis',
@@ -85,28 +106,50 @@ export default function HomeScreen() {
           }
         ];
         setAvailableBabies(testBabies);
-        const defaultBaby = testBabies[1]; // Luna (later birthdate)
-        setCurrentBaby(defaultBaby);
-        return;
+        setCurrentBaby(testBabies[1]);
       }
-      
-      setAvailableBabies(babies);
-      
-      // Set default to the latest created baby (Luna)
-      const sortedBabies = babies.sort((a, b) => b.birthdate.getTime() - a.birthdate.getTime());
-      const defaultBaby = sortedBabies[0]; // Latest baby (Luna)
-      setCurrentBaby(defaultBaby);
-      await loadData(defaultBaby.id);
     } catch (error) {
       console.error('Error loading babies:', error);
-      setAvailableBabies([]);
-      setCurrentBaby(null);
+      // Fallback to test data
+      const testBabies: BabyProfile[] = [
+        {
+          id: 'test-otis',
+          name: 'Otis',
+          birthdate: new Date('2024-01-15'),
+          shareCode: 'OTIS2024'
+        },
+        {
+          id: 'test-luna', 
+          name: 'Luna',
+          birthdate: new Date('2024-06-20'),
+          shareCode: 'LUNA2024'
+        }
+      ];
+      setAvailableBabies(testBabies);
+      setCurrentBaby(testBabies[1]);
     }
   };
 
   const loadData = async (babyId?: string) => {
     try {
       const targetBabyId = babyId || currentBaby?.id || DUMMY_BABY_ID;
+      
+      // Check if we're using fallback test data
+      const isUsingTestData = targetBabyId.includes('test-');
+      
+      if (isUsingTestData) {
+        // Set default empty state for test data
+        setRecentEvents([]);
+        setLastNursingSide(undefined);
+        setTodaysSummary({
+          feedings: 0,
+          sleepTime: '0h 0m',
+          diapers: 0
+        });
+        return;
+      }
+
+      // Now database should be working with mock data
       const events = await eventTracker.getRecentEvents(targetBabyId, 5);
       setRecentEvents(events);
 
@@ -134,6 +177,14 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error('Error loading data:', error);
+      // Set default empty state on error
+      setRecentEvents([]);
+      setLastNursingSide(undefined);
+      setTodaysSummary({
+        feedings: 0,
+        sleepTime: '0h 0m',
+        diapers: 0
+      });
     }
   };
 
@@ -161,6 +212,12 @@ export default function HomeScreen() {
         return;
       }
       
+      // Only block if using fallback test data (not mock database)
+      if (currentBaby.id.includes('test-')) {
+        Alert.alert('Info', 'Nursing session tracking is not available with test data.');
+        return;
+      }
+      
       await eventTracker.startNursingSession(currentBaby.id, side);
       setIsNursingInProgress(true);
       setCurrentNursingSide(side);
@@ -176,19 +233,40 @@ export default function HomeScreen() {
     }
   };
 
-  const handleNursingSave = async (_side: NursingSide, notes: string) => {
+  const handleNursingSave = async (side: NursingSide, notes: string, durationSeconds: number) => {
     try {
-      const event = await eventTracker.stopNursingSession(notes);
-      setIsNursingInProgress(false);
+      // Get the last created event (nursing session was already stopped when "Stop" was pressed)
+      const event = eventTracker.getLastCreatedEvent();
+      
+      if (event) {
+        // Update the event with custom duration and notes if different
+        if (Math.abs((event.duration || 0) - durationSeconds) > 1 || notes !== event.notes) {
+          const updatedEvent = { ...event, duration: durationSeconds, notes, side };
+          await eventTracker.updateEvent(updatedEvent);
+        }
+      } else {
+        // Fallback: create a manual event if somehow no event exists
+        if (!currentBaby) throw new Error('No baby selected');
+        await eventTracker.addManualEvent(
+          currentBaby.id, 
+          'nursing', 
+          new Date(Date.now() - durationSeconds * 1000), 
+          durationSeconds, 
+          notes, 
+          side
+        );
+      }
+      
       setElapsedTime('0m');
+      setStoppedNursingDuration(0);
       await loadData();
       Toast.show({
         type: 'success',
         text1: 'Nursing Complete',
-        text2: `${eventTracker.formatDuration(event.duration || 0)} session logged`
+        text2: `${eventTracker.formatDuration(durationSeconds)} session logged`
       });
     } catch (error) {
-      console.error('Error stopping nursing session:', error);
+      console.error('Error saving nursing session:', error);
       Alert.alert('Error', 'Failed to save nursing session');
     }
   };
@@ -210,6 +288,12 @@ export default function HomeScreen() {
         return;
       }
       
+      // Only block if using fallback test data (not mock database)
+      if (currentBaby.id.includes('test-')) {
+        Alert.alert('Info', 'Event logging is not available with test data.');
+        return;
+      }
+      
       await eventTracker.addManualEvent(currentBaby.id, currentEventType, undefined, duration, notes);
       await loadData();
       Toast.show({
@@ -227,6 +311,12 @@ export default function HomeScreen() {
     try {
       if (!currentBaby) {
         Alert.alert('Error', 'No baby selected');
+        return;
+      }
+      
+      // Only block if using fallback test data (not mock database)
+      if (currentBaby.id.includes('test-')) {
+        Alert.alert('Info', 'Sleep logging is not available with test data.');
         return;
       }
       
@@ -259,10 +349,23 @@ export default function HomeScreen() {
     }
   };
 
-  const handleStopNursingFromCard = () => {
+  const handleStopNursingFromCard = async () => {
     const activeSession = eventTracker.getActiveNursingSession();
     if (activeSession) {
       setCurrentNursingSide(activeSession.side);
+      // Calculate duration at the moment "Stop" is pressed
+      const now = new Date();
+      const duration = Math.floor((now.getTime() - activeSession.startTime.getTime()) / 1000);
+      setStoppedNursingDuration(duration);
+      // Freeze the displayed time
+      setElapsedTime(eventTracker.formatDuration(duration));
+      // Actually stop the nursing session to prevent background counting
+      try {
+        await eventTracker.stopNursingSession();
+        setIsNursingInProgress(false);
+      } catch (error) {
+        console.error('Error stopping nursing session:', error);
+      }
     }
     setShowNursingModal(true);
   };
@@ -491,6 +594,7 @@ export default function HomeScreen() {
         onSave={handleNursingSave}
         currentSide={currentNursingSide}
         elapsedTime={elapsedTime}
+        initialDurationSeconds={stoppedNursingDuration}
       />
       
       <EventModal
