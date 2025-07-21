@@ -413,8 +413,14 @@ export default function HomeScreen() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     
-    if (diffHours > 0) {
-      return `${diffHours}h ago`;
+    if (diffHours >= 1) {
+      // Show time format HH:MM for events older than 1 hour
+      const eventDate = new Date(timestamp);
+      return eventDate.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
     }
     return `${diffMins}m ago`;
   };
@@ -512,6 +518,7 @@ export default function HomeScreen() {
               >
                 <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
                   {getEventDisplayName(event.type)}
+                  {'side' in event && event.side && ` ${event.side}`}
                   {event.duration && ` (${formatDuration(event.duration)})`}
                 </Text>
                 <Text className="text-text-muted text-sm" style={{ fontFamily: 'Inter' }}>
