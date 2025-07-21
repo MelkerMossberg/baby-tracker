@@ -1,6 +1,7 @@
 import { BabyProfile, User, Event } from '../types/models';
 import { databaseService } from './database';
 import { eventTracker } from './EventTracker';
+import { testSQLiteBasic } from './debugSQLite';
 
 export const DUMMY_BABY_ID = 'baby-otis-2024';
 export const DUMMY_USER_ID = 'user-parent-1';
@@ -21,16 +22,26 @@ const dummyUser: User = {
 
 export async function initializeDummyData(): Promise<void> {
   try {
+    console.log('🔄 Starting database initialization...');
+    
+    // Initialize database service (with automatic fallback to mock)
     await databaseService.initialize();
+    console.log('✅ Database initialized successfully');
 
+    console.log('🔍 Checking for existing baby profile...');
     const existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
     if (existingBaby) {
-      console.log('Dummy data already exists');
+      console.log('✅ Dummy data already exists');
       return;
     }
 
+    console.log('👶 Creating baby profile...');
     await databaseService.createBabyProfile(dummyBaby);
+    console.log('✅ Baby profile created');
+
+    console.log('👤 Creating user...');
     await databaseService.createUser(dummyUser);
+    console.log('✅ User created');
 
     const now = new Date();
     const today = new Date(now);
@@ -93,18 +104,27 @@ export async function initializeDummyData(): Promise<void> {
       }
     ];
 
-    for (const eventData of dummyEvents) {
-      await eventTracker.addManualEvent(
-        eventData.babyId,
-        eventData.type,
-        eventData.timestamp,
-        eventData.duration,
-        eventData.notes,
-        eventData.side
-      );
+    console.log(`📝 Creating ${dummyEvents.length} events...`);
+    for (let i = 0; i < dummyEvents.length; i++) {
+      const eventData = dummyEvents[i];
+      console.log(`📝 Creating event ${i + 1}/${dummyEvents.length}: ${eventData.type}`);
+      try {
+        await eventTracker.addManualEvent(
+          eventData.babyId,
+          eventData.type,
+          eventData.timestamp,
+          eventData.duration,
+          eventData.notes,
+          eventData.side
+        );
+        console.log(`✅ Event ${i + 1} created successfully`);
+      } catch (error) {
+        console.error(`❌ Error creating event ${i + 1}:`, error);
+        throw error;
+      }
     }
 
-    console.log('Dummy data initialized successfully');
+    console.log('🎉 Dummy data initialized successfully');
   } catch (error) {
     console.error('Error initializing dummy data:', error);
     throw error;

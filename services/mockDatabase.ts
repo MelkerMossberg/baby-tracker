@@ -1,0 +1,127 @@
+import { BabyProfile, User, Event } from '../types/models';
+
+// In-memory storage for testing when SQLite fails
+let mockBabyProfiles: BabyProfile[] = [];
+let mockUsers: User[] = [];
+let mockEvents: Event[] = [];
+
+export class MockDatabaseService {
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
+    console.log('🔧 Initializing mock database...');
+    this.isInitialized = true;
+    console.log('✅ Mock database initialized');
+  }
+
+  async createBabyProfile(baby: BabyProfile): Promise<void> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const existingIndex = mockBabyProfiles.findIndex(b => b.id === baby.id);
+    if (existingIndex >= 0) {
+      mockBabyProfiles[existingIndex] = baby;
+    } else {
+      mockBabyProfiles.push(baby);
+    }
+    console.log('✅ Mock baby profile created:', baby.name);
+  }
+
+  async getBabyProfile(id: string): Promise<BabyProfile | null> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const baby = mockBabyProfiles.find(b => b.id === id);
+    return baby || null;
+  }
+
+  async getAllBabyProfiles(): Promise<BabyProfile[]> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    return [...mockBabyProfiles];
+  }
+
+  async createUser(user: User): Promise<void> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const existingIndex = mockUsers.findIndex(u => u.id === user.id);
+    if (existingIndex >= 0) {
+      mockUsers[existingIndex] = user;
+    } else {
+      mockUsers.push(user);
+    }
+    console.log('✅ Mock user created:', user.name);
+  }
+
+  async getUser(id: string): Promise<User | null> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const user = mockUsers.find(u => u.id === id);
+    return user || null;
+  }
+
+  async createEvent(event: Event): Promise<void> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const existingIndex = mockEvents.findIndex(e => e.id === event.id);
+    if (existingIndex >= 0) {
+      mockEvents[existingIndex] = event;
+    } else {
+      mockEvents.push(event);
+    }
+    console.log('✅ Mock event created:', event.type);
+  }
+
+  async getEventsForBaby(babyId: string, limit?: number): Promise<Event[]> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    let events = mockEvents
+      .filter(e => e.babyId === babyId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    if (limit) {
+      events = events.slice(0, limit);
+    }
+    
+    return events;
+  }
+
+  async getEventsByType(babyId: string, type: string, limit?: number): Promise<Event[]> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    let events = mockEvents
+      .filter(e => e.babyId === babyId && e.type === type)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    if (limit) {
+      events = events.slice(0, limit);
+    }
+    
+    return events;
+  }
+
+  async updateEvent(event: Event): Promise<void> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const index = mockEvents.findIndex(e => e.id === event.id);
+    if (index >= 0) {
+      mockEvents[index] = event;
+    }
+    console.log('✅ Mock event updated:', event.type);
+  }
+
+  async deleteEvent(eventId: string): Promise<void> {
+    if (!this.isInitialized) throw new Error('Mock database not initialized');
+    
+    const index = mockEvents.findIndex(e => e.id === eventId);
+    if (index >= 0) {
+      mockEvents.splice(index, 1);
+    }
+    console.log('✅ Mock event deleted');
+  }
+
+  // Clear all mock data
+  clearAllData(): void {
+    mockBabyProfiles = [];
+    mockUsers = [];
+    mockEvents = [];
+    console.log('✅ Mock database cleared');
+  }
+}

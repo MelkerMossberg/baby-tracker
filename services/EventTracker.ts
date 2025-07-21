@@ -12,7 +12,7 @@ class EventTracker {
   private activeNursingSession: ActiveNursingSession | null = null;
 
   private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    return Date.now().toString() + Math.random().toString(36).substring(2, 11);
   }
 
   async startNursingSession(babyId: string, side: NursingSide): Promise<string> {
@@ -85,6 +85,11 @@ class EventTracker {
     const eventId = this.generateId();
     const eventTimestamp = timestamp || new Date();
 
+    // Validate timestamp
+    if (!eventTimestamp || !(eventTimestamp instanceof Date) || isNaN(eventTimestamp.getTime())) {
+      throw new Error('Invalid timestamp provided for manual event');
+    }
+
     const event: Event = {
       id: eventId,
       type,
@@ -101,6 +106,17 @@ class EventTracker {
   }
 
   async addSleepEvent(babyId: string, startTime: Date, endTime: Date, notes?: string): Promise<Event> {
+    // Validate dates
+    if (!startTime || !(startTime instanceof Date) || isNaN(startTime.getTime())) {
+      throw new Error('Invalid start time provided for sleep event');
+    }
+    if (!endTime || !(endTime instanceof Date) || isNaN(endTime.getTime())) {
+      throw new Error('Invalid end time provided for sleep event');
+    }
+    if (endTime.getTime() <= startTime.getTime()) {
+      throw new Error('End time must be after start time');
+    }
+
     const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
     return this.addManualEvent(babyId, 'sleep', startTime, duration, notes);
