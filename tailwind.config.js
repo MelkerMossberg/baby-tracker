@@ -11,23 +11,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-main': '#111019',
-        'bg-soft': '#1B1A24',
+        'bg-main': '#0f0d16ff',
+        'bg-soft': '#0f0d16ff',
+        'card-main': '#161020',
         'accent-pink': '#F6C2D9',
         'accent-peach': '#FFD1B9',
         'accent-mauve': '#B8A4FF',
         'baby-blue': '#B8D4F8',
         'text-main': '#F2F2F2',
         'text-muted': '#A9A6B5',
-        'border-subtle': '#111019',
+        'border-subtle': '#0f0d16ff',
       },
       fontFamily: {
         display: ['"DM Serif Display"', 'serif'],
         sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      borderRadius: {
-        '2xl': '1.5rem',
-      },
+      
       boxShadow: {
         'glow-soft': '0 0 12px rgba(255, 241, 247, 0.1)',
         'glow-pink': '0 0 16px rgba(246, 194, 217, 0.15)',

@@ -11,7 +11,7 @@ interface ActiveNursingCardProps {
 
 export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSide, onStop }: ActiveNursingCardProps) {
   const getSideButtonStyle = (side: NursingSide) => ({
-    backgroundColor: currentSide === side ? '#22543D' : '#171021'
+    backgroundColor: currentSide === side ? '#22543D' : '#161020'
   });
 
   const getSideDisplayText = (side: NursingSide): string => {
@@ -19,10 +19,10 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
   };
 
   return (
-    <View className="mx-4 mb-4 rounded-2xl p-4 shadow-lg" style={{ backgroundColor: '#1F2937' }}>
+    <View className="mx-4 mb-4 rounded-2xl p-4 shadow-lg bg-card-main">
       <View className="flex-row justify-between items-center mb-4">
         <View>
-          <Text className="text-white text-lg font-serif" style={{ fontFamily: 'DM Serif Display' }}>
+          <Text className="text-text-main text-lg font-serif" style={{ fontFamily: 'DM Serif Display' }}>
             Nursing in Progress
           </Text>
           <Text className="text-green-300 text-2xl font-bold mt-1" style={{ fontFamily: 'Inter' }}>
@@ -31,16 +31,15 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
         </View>
         
         <TouchableOpacity
-          className="py-2 px-4 rounded-xl"
-          style={{ backgroundColor: '#DC2626' }}
+          className="py-2 px-4 rounded-xl bg-red-600"
           onPress={onStop}
         >
-          <Text className="text-white font-semibold" style={{ fontFamily: 'Inter' }}>Stop</Text>
+          <Text className="text-text-main font-semibold" style={{ fontFamily: 'Inter' }}>Stop</Text>
         </TouchableOpacity>
       </View>
 
       <View>
-        <Text className="text-gray-300 mb-2" style={{ fontFamily: 'Inter' }}>
+        <Text className="text-text-muted mb-2" style={{ fontFamily: 'Inter' }}>
           Current: {getSideDisplayText(currentSide)}
         </Text>
         
@@ -50,7 +49,7 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
             style={getSideButtonStyle('left')}
             onPress={() => onSwitchSide('left')}
           >
-            <Text className="text-white" style={{ fontFamily: 'Inter' }}>Left</Text>
+            <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Left</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -58,7 +57,7 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
             style={getSideButtonStyle('right')}
             onPress={() => onSwitchSide('right')}
           >
-            <Text className="text-white" style={{ fontFamily: 'Inter' }}>Right</Text>
+            <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Right</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -156,10 +156,10 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-[#0E0A13]">
+      <View className="flex-1 bg-bg-main">
         {/* Header */}
-        <View className="flex-row justify-between items-center p-4 border-b border-gray-700">
-          <Text className="text-xl font-serif text-white" style={{ fontFamily: 'DM Serif Display' }}>
+        <View className="flex-row justify-between items-center p-4 border-b border-text-muted">
+          <Text className="text-xl font-serif text-text-main" style={{ fontFamily: 'DM Serif Display' }}>
             All Events
           </Text>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
@@ -170,23 +170,23 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
         </View>
 
         {/* Date Filters */}
-        <View className="p-4 border-b border-gray-700">
-          <Text className="text-white text-lg mb-3" style={{ fontFamily: 'Inter' }}>
+        <View className="p-4 border-b border-text-muted">
+          <Text className="text-text-main text-lg mb-3" style={{ fontFamily: 'Inter' }}>
             Filter by Date
           </Text>
           
           <View className="flex-row justify-between gap-4">
             {/* From Date */}
             <View className="flex-1">
-              <Text className="text-gray-400 text-sm mb-2" style={{ fontFamily: 'Inter' }}>
+              <Text className="text-text-muted text-sm mb-2" style={{ fontFamily: 'Inter' }}>
                 From
               </Text>
               <TouchableOpacity
-                className="bg-[#171021] p-3 rounded-xl"
+                className="bg-card-main p-3 rounded-xl"
                 onPress={() => setShowFromPicker(true)}
                 activeOpacity={0.7}
               >
-                <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+                <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
                   {formatDateForDisplay(fromDate)}
                 </Text>
               </TouchableOpacity>
@@ -194,15 +194,15 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
 
             {/* Until Date */}
             <View className="flex-1">
-              <Text className="text-gray-400 text-sm mb-2" style={{ fontFamily: 'Inter' }}>
+              <Text className="text-text-muted text-sm mb-2" style={{ fontFamily: 'Inter' }}>
                 Until
               </Text>
               <TouchableOpacity
-                className="bg-[#171021] p-3 rounded-xl"
+                className="bg-card-main p-3 rounded-xl"
                 onPress={() => setShowUntilPicker(true)}
                 activeOpacity={0.7}
               >
-                <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+                <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
                   {formatDateForDisplay(untilDate)}
                 </Text>
               </TouchableOpacity>
@@ -215,13 +215,13 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
           {loading ? (
             <View className="flex-1 justify-center items-center">
               <ActivityIndicator size="large" color="#22543D" />
-              <Text className="text-gray-400 mt-4" style={{ fontFamily: 'Inter' }}>
+              <Text className="text-text-muted mt-4" style={{ fontFamily: 'Inter' }}>
                 Loading events...
               </Text>
             </View>
           ) : filteredEvents.length === 0 ? (
             <View className="flex-1 justify-center items-center">
-              <Text className="text-gray-400 text-center" style={{ fontFamily: 'Inter' }}>
+              <Text className="text-text-muted text-center" style={{ fontFamily: 'Inter' }}>
                 No events found for the selected date range
               </Text>
             </View>
@@ -230,22 +230,22 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
               {filteredEvents.map((event, index) => (
                 <View 
                   key={event.id} 
-                  className="bg-[#171021] rounded-xl p-4"
+                  className="bg-card-main rounded-xl p-4"
                 >
                   <View className="flex-row justify-between items-start">
                     <View className="flex-1">
-                      <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>
+                      <Text className="text-text-main text-lg" style={{ fontFamily: 'Inter' }}>
                         {getEventDisplayName(event.type)}
                         {event.duration && ` (${formatDuration(event.duration)})`}
                         {'side' in event && event.side && ` - ${event.side}`}
                       </Text>
                       {event.notes && (
-                        <Text className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'Inter' }}>
+                        <Text className="text-text-muted text-sm mt-1" style={{ fontFamily: 'Inter' }}>
                           {event.notes}
                         </Text>
                       )}
                     </View>
-                    <Text className="text-gray-400 text-sm" style={{ fontFamily: 'Inter' }}>
+                    <Text className="text-text-muted text-sm" style={{ fontFamily: 'Inter' }}>
                       {formatEventTime(event.timestamp)}
                     </Text>
                   </View>

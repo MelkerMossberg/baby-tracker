@@ -422,24 +422,24 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-[#0E0A13] justify-center items-center">
-        <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>Loading...</Text>
+      <View className="flex-1 bg-bg-main justify-center items-center">
+        <Text className="text-text-main text-lg" style={{ fontFamily: 'Inter' }}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1" style={{ backgroundColor: '#0E0A13' }}>
+    <View className="flex-1" style={{ backgroundColor: '#0f0d16ff' }}>
       <ScrollView 
         className="flex-1" 
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ paddingVertical: 16 }}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
       >
       {/* Header */}
       <View className="flex-row justify-between items-center mb-6">
         <View>
-          <Text className="text-xl font-serif text-white" style={{ fontFamily: 'DM Serif Display' }}>
+          <Text className="text-xl font-serif text-text-main" style={{ fontFamily: 'DM Serif Display' }}>
             Baby Tracker
           </Text>
           <TouchableOpacity 
@@ -447,13 +447,13 @@ export default function HomeScreen() {
             onPress={() => setShowBabySwitcherModal(true)}
             activeOpacity={0.7}
           >
-            <Text className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>
+            <Text className="text-sm text-text-muted" style={{ fontFamily: 'Inter' }}>
               ▼ Focused on {currentBaby?.name || (availableBabies.length === 0 ? 'No babies found' : 'Loading...')}
             </Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity 
-          className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center"
+          className="w-10 h-10 bg-card-main rounded-full items-center justify-center"
           onPress={() => {
             // TODO: Implement account menu
           }}
@@ -478,13 +478,13 @@ export default function HomeScreen() {
 
 
       {/* Hero Message */}
-      <Text className="text-3xl font-serif text-white mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
+      <Text className="text-3xl font-serif text-text-main mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
         {currentBaby ? `Soon time for ${currentBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
       </Text>
 
       {/* Recent Activity */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-lg text-gray-400" style={{ fontFamily: 'Inter' }}>
+        <Text className="text-lg text-text-muted" style={{ fontFamily: 'Inter' }}>
           Recent activity
         </Text>
         <TouchableOpacity onPress={() => setShowAllEventsModal(true)} activeOpacity={0.7}>
@@ -495,13 +495,12 @@ export default function HomeScreen() {
       </View>
 
       <TouchableOpacity 
-        className="rounded-2xl p-4 shadow-lg mb-8" 
-        style={{ backgroundColor: '#171021' }}
+        className="rounded-2xl p-4 shadow-lg mb-8 bg-card-main" 
         onPress={() => allEvents.length > 5 ? setShowAllEventsModal(true) : undefined}
         activeOpacity={allEvents.length > 5 ? 0.7 : 1}
       >
         {recentEvents.length === 0 ? (
-          <Text className="text-gray-400 text-center" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-muted text-center" style={{ fontFamily: 'Inter' }}>
             No recent activity
           </Text>
         ) : (
@@ -511,18 +510,18 @@ export default function HomeScreen() {
                 key={event.id} 
                 className={`flex-row justify-between items-center ${index < recentEvents.length - 1 ? 'mb-4' : ''}`}
               >
-                <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+                <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
                   {getEventDisplayName(event.type)}
                   {event.duration && ` (${formatDuration(event.duration)})`}
                 </Text>
-                <Text className="text-gray-400 text-sm" style={{ fontFamily: 'Inter' }}>
+                <Text className="text-text-muted text-sm" style={{ fontFamily: 'Inter' }}>
                   {formatEventTime(event.timestamp)}
                 </Text>
               </View>
             ))}
             
             {allEvents.length > 5 && (
-              <View className="mt-3 pt-3 border-t border-gray-600">
+              <View className="mt-3 pt-3 border-t border-text-muted">
                 <Text className="text-blue-400 text-sm text-center" style={{ fontFamily: 'Inter' }}>
                   Show more ({allEvents.length - 5} more events)
                 </Text>
@@ -533,18 +532,17 @@ export default function HomeScreen() {
       </TouchableOpacity>
 
       {/* Track */}
-      <Text className="text-lg text-gray-400 mb-4" style={{ fontFamily: 'Inter' }}>
+      <Text className="text-lg text-text-muted mb-4" style={{ fontFamily: 'Inter' }}>
         Track
       </Text>
       <View className="mb-8 space-y-4">
   <View className="flex-row justify-between">
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: isNursingInProgress ? '#22543D' : '#171021' }}
+      className={`w-[48%] rounded-2xl p-6 shadow-lg items-center ${isNursingInProgress ? 'bg-green-700' : 'bg-card-main'}`}
       onPress={handleNursingPress}
     >
       <Image source={require('../assets/img/icons/nursing.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
         {isNursingInProgress ? 'Stop Nursing' : 'Nursing'}
       </Text>
       {isNursingInProgress && (
@@ -555,82 +553,77 @@ export default function HomeScreen() {
     </TouchableOpacity>
 
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: '#171021' }}
+      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
       onPress={() => handleQuickEvent('sleep', 'Sleep')}
     >
       <Image source={require('../assets/img/icons/sleep.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>Sleep</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Sleep</Text>
     </TouchableOpacity>
   </View>
 
   <View className="flex-row justify-between">
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: '#171021' }}
+      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
       onPress={() => handleQuickEvent('diaper', 'Diaper Change')}
     >
       <Image source={require('../assets/img/icons/diaper.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>Diaper change</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Diaper change</Text>
     </TouchableOpacity>
 
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: '#171021' }}
+      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
       onPress={() => handleQuickEvent('pumping', 'Pumping')}
     >
       <Image source={require('../assets/img/icons/pumping.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>Pumping</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Pumping</Text>
     </TouchableOpacity>
   </View>
 
   <View className="flex-row justify-between">
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: '#171021' }}
+      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
       onPress={() => handleQuickEvent('bottle', 'Bottle Feed')}
     >
       <Image source={require('../assets/img/icons/bottle.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>Bottle feed</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Bottle feed</Text>
     </TouchableOpacity>
 
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center" 
-      style={{ backgroundColor: '#171021' }}
+      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
       onPress={() => handleQuickEvent('solids', 'Solid Food')}
     >
       <Image source={require('../assets/img/icons/solids.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-white" style={{ fontFamily: 'Inter' }}>Solid food</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Solid food</Text>
     </TouchableOpacity>
   </View>
 </View>
 
       {/* Today's Summary */}
-      <Text className="text-lg text-gray-400 mb-4" style={{ fontFamily: 'Inter' }}>
+      <Text className="text-lg text-text-muted mb-4" style={{ fontFamily: 'Inter' }}>
         Today's summary
       </Text>
-      <View className="rounded-2xl p-4 shadow-lg mb-8" style={{ backgroundColor: '#171021' }}>
+      <View className="rounded-2xl p-4 shadow-lg mb-8 bg-card-main">
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             Feedings
           </Text>
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             {todaysSummary.feedings} times
           </Text>
         </View>
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             Sleep
           </Text>
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             {todaysSummary.sleepTime}
           </Text>
         </View>
         <View className="flex-row justify-between items-center">
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             Diapers
           </Text>
-          <Text className="text-white" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
             {todaysSummary.diapers} changes
           </Text>
         </View>
