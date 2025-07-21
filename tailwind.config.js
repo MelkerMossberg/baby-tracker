@@ -19,7 +19,7 @@ module.exports = {
         'baby-blue': '#B8D4F8',
         'text-main': '#F2F2F2',
         'text-muted': '#A9A6B5',
-        'border-subtle': '#292837',
+        'border-subtle': '#111019',
       },
       fontFamily: {
         display: ['"DM Serif Display"', 'serif'],

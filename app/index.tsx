@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { eventTracker, initializeDummyData, DUMMY_BABY_ID } from '../services';
-import { Event, EventType, NursingSide } from '../types';
+import { eventTracker, initializeDummyData, DUMMY_BABY_ID, databaseService } from '../services';
+import { Event, EventType, NursingSide, BabyProfile } from '../types';
 import NursingModal from '../components/NursingModal';
 import EventModal from '../components/EventModal';
 import SleepModal from '../components/SleepModal';
+import BreastSelectionModal from '../components/BreastSelectionModal';
+import ActiveNursingCard from '../components/ActiveNursingCard';
+import BabySwitcherModal from '../components/BabySwitcherModal';
 
 export default function HomeScreen() {
   const [isNursingInProgress, setIsNursingInProgress] = useState(false);
@@ -20,9 +23,14 @@ export default function HomeScreen() {
   const [showNursingModal, setShowNursingModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showBreastSelectionModal, setShowBreastSelectionModal] = useState(false);
+  const [showBabySwitcherModal, setShowBabySwitcherModal] = useState(false);
   const [currentEventType, setCurrentEventType] = useState<EventType>('diaper');
   const [currentEventTitle, setCurrentEventTitle] = useState('');
   const [currentNursingSide, setCurrentNursingSide] = useState<NursingSide>('left');
+  const [lastNursingSide, setLastNursingSide] = useState<NursingSide | undefined>(undefined);
+  const [currentBaby, setCurrentBaby] = useState<BabyProfile | null>(null);
+  const [availableBabies, setAvailableBabies] = useState<BabyProfile[]>([]);
 
   useEffect(() => {
     initializeApp();
@@ -39,10 +47,14 @@ export default function HomeScreen() {
   const initializeApp = async () => {
     try {
       await initializeDummyData();
-      await loadData();
+      await loadBabies();
       setIsNursingInProgress(eventTracker.isNursingInProgress());
       if (eventTracker.isNursingInProgress()) {
         setElapsedTime(eventTracker.getElapsedTime());
+        const activeSession = eventTracker.getActiveNursingSession();
+        if (activeSession) {
+          setCurrentNursingSide(activeSession.side);
+        }
       }
     } catch (error) {
       console.error('Error initializing app:', error);
@@ -52,12 +64,59 @@ export default function HomeScreen() {
     }
   };
 
-  const loadData = async () => {
+  const loadBabies = async () => {
     try {
-      const events = await eventTracker.getRecentEvents(DUMMY_BABY_ID, 5);
+      const babies = await databaseService.getAllBabyProfiles();
+      
+      if (babies.length === 0) {
+        // Create temporary fallback data for testing
+        const testBabies: BabyProfile[] = [
+          {
+            id: 'test-otis',
+            name: 'Otis',
+            birthdate: new Date('2024-01-15'),
+            shareCode: 'OTIS2024'
+          },
+          {
+            id: 'test-luna', 
+            name: 'Luna',
+            birthdate: new Date('2024-06-20'),
+            shareCode: 'LUNA2024'
+          }
+        ];
+        setAvailableBabies(testBabies);
+        const defaultBaby = testBabies[1]; // Luna (later birthdate)
+        setCurrentBaby(defaultBaby);
+        return;
+      }
+      
+      setAvailableBabies(babies);
+      
+      // Set default to the latest created baby (Luna)
+      const sortedBabies = babies.sort((a, b) => b.birthdate.getTime() - a.birthdate.getTime());
+      const defaultBaby = sortedBabies[0]; // Latest baby (Luna)
+      setCurrentBaby(defaultBaby);
+      await loadData(defaultBaby.id);
+    } catch (error) {
+      console.error('Error loading babies:', error);
+      setAvailableBabies([]);
+      setCurrentBaby(null);
+    }
+  };
+
+  const loadData = async (babyId?: string) => {
+    try {
+      const targetBabyId = babyId || currentBaby?.id || DUMMY_BABY_ID;
+      const events = await eventTracker.getRecentEvents(targetBabyId, 5);
       setRecentEvents(events);
 
-      const todayEvents = await eventTracker.getTodaysEvents(DUMMY_BABY_ID);
+      // Get last nursing side
+      const lastNursingEvents = await eventTracker.getEventsByType(targetBabyId, 'nursing', 1);
+      if (lastNursingEvents.length > 0 && 'side' in lastNursingEvents[0]) {
+        setLastNursingSide(lastNursingEvents[0].side as NursingSide);
+      }
+
+      const todayEvents = await eventTracker.getTodaysEvents(targetBabyId);
       
       const feedings = todayEvents.filter(e => e.type === 'nursing').length;
       const sleepEvents = todayEvents.filter(e => e.type === 'sleep');
@@ -87,14 +146,7 @@ export default function HomeScreen() {
         }
         setShowNursingModal(true);
       } else {
-        await eventTracker.startNursingSession(DUMMY_BABY_ID, 'left');
-        setIsNursingInProgress(true);
-        setElapsedTime('0m');
-        Toast.show({
-          type: 'success',
-          text1: 'Nursing Started',
-          text2: 'Timer is now running'
-        });
+        setShowBreastSelectionModal(true);
       }
     } catch (error) {
       console.error('Error handling nursing session:', error);
@@ -102,7 +154,29 @@ export default function HomeScreen() {
     }
   };
 
-  const handleNursingSave = async (side: NursingSide, notes: string) => {
+  const handleBreastSelection = async (side: NursingSide) => {
+    try {
+      if (!currentBaby) {
+        Alert.alert('Error', 'No baby selected');
+        return;
+      }
+      
+      await eventTracker.startNursingSession(currentBaby.id, side);
+      setIsNursingInProgress(true);
+      setCurrentNursingSide(side);
+      setElapsedTime('0m');
+      Toast.show({
+        type: 'success',
+        text1: 'Nursing Started',
+        text2: `Timer is now running (${side})`
+      });
+    } catch (error) {
+      console.error('Error starting nursing session:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to start nursing session');
+    }
+  };
+
+  const handleNursingSave = async (_side: NursingSide, notes: string) => {
     try {
       const event = await eventTracker.stopNursingSession(notes);
       setIsNursingInProgress(false);
@@ -119,7 +193,7 @@ export default function HomeScreen() {
     }
   };
 
-  const handleQuickEvent = async (type: EventType, title: string, showDuration = false) => {
+  const handleQuickEvent = async (type: EventType, title: string) => {
     setCurrentEventType(type);
     setCurrentEventTitle(title);
     if (type === 'sleep') {
@@ -131,7 +205,12 @@ export default function HomeScreen() {
 
   const handleEventSave = async (notes: string, duration?: number) => {
     try {
-      await eventTracker.addManualEvent(DUMMY_BABY_ID, currentEventType, undefined, duration, notes);
+      if (!currentBaby) {
+        Alert.alert('Error', 'No baby selected');
+        return;
+      }
+      
+      await eventTracker.addManualEvent(currentBaby.id, currentEventType, undefined, duration, notes);
       await loadData();
       Toast.show({
         type: 'success',
@@ -146,7 +225,12 @@ export default function HomeScreen() {
 
   const handleSleepSave = async (startTime: Date, endTime: Date, notes: string) => {
     try {
-      await eventTracker.addSleepEvent(DUMMY_BABY_ID, startTime, endTime, notes);
+      if (!currentBaby) {
+        Alert.alert('Error', 'No baby selected');
+        return;
+      }
+      
+      await eventTracker.addSleepEvent(currentBaby.id, startTime, endTime, notes);
       await loadData();
       const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       Toast.show({
@@ -158,6 +242,39 @@ export default function HomeScreen() {
       console.error('Error saving sleep event:', error);
       Alert.alert('Error', 'Failed to save sleep event');
     }
+  };
+
+  const handleSwitchNursingSide = (newSide: NursingSide) => {
+    try {
+      eventTracker.switchNursingSide(newSide);
+      setCurrentNursingSide(newSide);
+      Toast.show({
+        type: 'success',
+        text1: 'Side Switched',
+        text2: `Now nursing: ${newSide}`
+      });
+    } catch (error) {
+      console.error('Error switching nursing side:', error);
+      Alert.alert('Error', 'Failed to switch nursing side');
+    }
+  };
+
+  const handleStopNursingFromCard = () => {
+    const activeSession = eventTracker.getActiveNursingSession();
+    if (activeSession) {
+      setCurrentNursingSide(activeSession.side);
+    }
+    setShowNursingModal(true);
+  };
+
+  const handleBabySwitch = async (baby: BabyProfile) => {
+    setCurrentBaby(baby);
+    await loadData(baby.id);
+    Toast.show({
+      type: 'success',
+      text1: 'Baby Switched',
+      text2: `Now viewing ${baby.name}`
+    });
   };
 
   const formatEventTime = (timestamp: Date): string => {
@@ -204,11 +321,14 @@ export default function HomeScreen() {
           <Text className="text-xl font-serif text-white" style={{ fontFamily: 'DM Serif Display' }}>
             Baby Tracker
           </Text>
-          <View className="flex-row items-center mt-1">
+          <TouchableOpacity 
+            className="flex-row items-center mt-1"
+            onPress={() => setShowBabySwitcherModal(true)}
+          >
             <Text className="text-sm text-gray-400" style={{ fontFamily: 'Inter' }}>
-              ▼ Focused on Otis
+              ▼ Focused on {currentBaby?.name || (availableBabies.length === 0 ? 'No babies found' : 'Loading...')}
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center">
           <Image 
@@ -218,9 +338,20 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Active Nursing Card */}
+      {isNursingInProgress && (
+        <ActiveNursingCard
+          elapsedTime={elapsedTime}
+          currentSide={currentNursingSide}
+          onSwitchSide={handleSwitchNursingSide}
+          onStop={handleStopNursingFromCard}
+        />
+      )}
+
+
       {/* Hero Message */}
       <Text className="text-3xl font-serif text-white mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
-        Soon time for Otis's second meal. Yum.
+        {currentBaby ? `Soon time for ${currentBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
       </Text>
 
       {/* Recent Activity */}
@@ -375,6 +506,21 @@ export default function HomeScreen() {
         visible={showSleepModal}
         onClose={() => setShowSleepModal(false)}
         onSave={handleSleepSave}
+      />
+      
+      <BreastSelectionModal
+        visible={showBreastSelectionModal}
+        onClose={() => setShowBreastSelectionModal(false)}
+        onSelectSide={handleBreastSelection}
+        lastNursingSide={lastNursingSide}
+      />
+      
+      <BabySwitcherModal
+        visible={showBabySwitcherModal}
+        onClose={() => setShowBabySwitcherModal(false)}
+        onSelectBaby={handleBabySwitch}
+        babies={availableBabies}
+        currentBabyId={currentBaby?.id || ''}
       />
       </ScrollView>
       

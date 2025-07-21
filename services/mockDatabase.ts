@@ -19,11 +19,13 @@ export class MockDatabaseService {
     
     const existingIndex = mockBabyProfiles.findIndex(b => b.id === baby.id);
     if (existingIndex >= 0) {
+      console.log('✅ Mock baby profile updated:', baby.name);
       mockBabyProfiles[existingIndex] = baby;
     } else {
+      console.log('✅ Mock baby profile created:', baby.name);
       mockBabyProfiles.push(baby);
     }
-    console.log('✅ Mock baby profile created:', baby.name);
+    console.log('📊 Total mock babies now:', mockBabyProfiles.length);
   }
 
   async getBabyProfile(id: string): Promise<BabyProfile | null> {

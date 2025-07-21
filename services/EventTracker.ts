@@ -66,6 +66,14 @@ class EventTracker {
     return this.activeNursingSession !== null;
   }
 
+  switchNursingSide(newSide: NursingSide): void {
+    if (!this.activeNursingSession) {
+      throw new Error('No active nursing session to switch sides');
+    }
+    
+    this.activeNursingSession.side = newSide;
+  }
+
   async cancelNursingSession(): Promise<void> {
     if (!this.activeNursingSession) {
       throw new Error('No active nursing session to cancel.');
@@ -169,11 +177,15 @@ class EventTracker {
   formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
     
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
-    return `${minutes}m`;
+    if (minutes > 0) {
+      return `${minutes}m`;
+    }
+    return `${remainingSeconds}s`;
   }
 
   getElapsedTime(): string {

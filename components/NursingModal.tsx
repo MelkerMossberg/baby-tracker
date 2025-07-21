@@ -14,6 +14,13 @@ export default function NursingModal({ visible, onClose, onSave, currentSide, el
   const [selectedSide, setSelectedSide] = useState<NursingSide>(currentSide);
   const [notes, setNotes] = useState('');
 
+  // Reset to current side when modal opens
+  React.useEffect(() => {
+    if (visible) {
+      setSelectedSide(currentSide);
+    }
+  }, [visible, currentSide]);
+
   const handleSave = () => {
     onSave(selectedSide, notes);
     setNotes('');
@@ -50,9 +57,9 @@ export default function NursingModal({ visible, onClose, onSave, currentSide, el
             Which side?
           </Text>
           
-          <View className="flex-row justify-between mb-6">
+          <View className="flex-row space-x-4 mb-6">
             <TouchableOpacity
-              className="flex-1 py-3 px-4 rounded-xl mr-2 items-center"
+              className="flex-1 py-3 px-4 rounded-xl items-center"
               style={getSideButtonStyle('left')}
               onPress={() => setSelectedSide('left')}
             >
@@ -60,15 +67,7 @@ export default function NursingModal({ visible, onClose, onSave, currentSide, el
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="flex-1 py-3 px-4 rounded-xl mx-1 items-center"
-              style={getSideButtonStyle('both')}
-              onPress={() => setSelectedSide('both')}
-            >
-              <Text className="text-white" style={{ fontFamily: 'Inter' }}>Both</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              className="flex-1 py-3 px-4 rounded-xl ml-2 items-center"
+              className="flex-1 py-3 px-4 rounded-xl items-center"
               style={getSideButtonStyle('right')}
               onPress={() => setSelectedSide('right')}
             >

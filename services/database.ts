@@ -126,7 +126,7 @@ class DatabaseService {
         timestamp TEXT NOT NULL,
         duration INTEGER,
         notes TEXT,
-        side TEXT CHECK(side IN ('left', 'right', 'both')),
+        side TEXT CHECK(side IN ('left', 'right')),
         baby_id TEXT NOT NULL,
         FOREIGN KEY(baby_id) REFERENCES baby_profiles(id)
       );`);
@@ -192,7 +192,11 @@ class DatabaseService {
   }
 
   async getAllBabyProfiles(): Promise<BabyProfile[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    this.checkInitialized();
+    
+    if (this.useMockDb && this.mockDb) {
+      return this.mockDb.getAllBabyProfiles();
+    }
 
     const results = await this.db.getAllAsync('SELECT * FROM baby_profiles') as any[];
 

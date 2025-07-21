@@ -14,7 +14,7 @@ export interface User {
 
 export type EventType = 'nursing' | 'sleep' | 'diaper' | 'pumping' | 'bottle' | 'solids';
 
-export type NursingSide = 'left' | 'right' | 'both';
+export type NursingSide = 'left' | 'right';
 
 export interface Event {
   id: string;

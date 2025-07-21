@@ -4,6 +4,7 @@ import { eventTracker } from './EventTracker';
 import { testSQLiteBasic } from './debugSQLite';
 
 export const DUMMY_BABY_ID = 'baby-otis-2024';
+export const DUMMY_BABY_2_ID = 'baby-luna-2024';
 export const DUMMY_USER_ID = 'user-parent-1';
 
 const dummyBaby: BabyProfile = {
@@ -13,11 +14,18 @@ const dummyBaby: BabyProfile = {
   shareCode: 'OTIS2024'
 };
 
+const dummyBaby2: BabyProfile = {
+  id: DUMMY_BABY_2_ID,
+  name: 'Luna',
+  birthdate: new Date('2024-06-20'),
+  shareCode: 'LUNA2024'
+};
+
 const dummyUser: User = {
   id: DUMMY_USER_ID,
   name: 'Parent',
   role: 'admin',
-  linkedBabies: [DUMMY_BABY_ID]
+  linkedBabies: [DUMMY_BABY_ID, DUMMY_BABY_2_ID]
 };
 
 export async function initializeDummyData(): Promise<void> {
@@ -28,16 +36,27 @@ export async function initializeDummyData(): Promise<void> {
     await databaseService.initialize();
     console.log('✅ Database initialized successfully');
 
-    console.log('🔍 Checking for existing baby profile...');
+    console.log('🔍 Checking for existing baby profiles...');
     const existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
-    if (existingBaby) {
-      console.log('✅ Dummy data already exists');
+    const existingBaby2 = await databaseService.getBabyProfile(DUMMY_BABY_2_ID);
+    
+    console.log('🔍 Existing baby 1 (Otis):', existingBaby ? 'Found' : 'Not found');
+    console.log('🔍 Existing baby 2 (Luna):', existingBaby2 ? 'Found' : 'Not found');
+    
+    if (existingBaby && existingBaby2) {
+      console.log('✅ All dummy data already exists, skipping creation');
+      // Still verify they are retrievable
+      const allBabies = await databaseService.getAllBabyProfiles();
+      console.log('✅ Verification: Found', allBabies.length, 'babies total');
       return;
     }
 
-    console.log('👶 Creating baby profile...');
+    console.log('👶 Creating baby profiles...');
     await databaseService.createBabyProfile(dummyBaby);
-    console.log('✅ Baby profile created');
+    console.log('✅ Baby profile created: Otis');
+    
+    await databaseService.createBabyProfile(dummyBaby2);
+    console.log('✅ Baby profile created: Luna (no events)');
 
     console.log('👤 Creating user...');
     await databaseService.createUser(dummyUser);
@@ -124,7 +143,14 @@ export async function initializeDummyData(): Promise<void> {
       }
     }
 
-    console.log('🎉 Dummy data initialized successfully');
+    // Final verification that babies were created successfully
+    console.log('🔍 Final verification - loading all baby profiles...');
+    const allBabies = await databaseService.getAllBabyProfiles();
+    console.log('🎉 Dummy data initialized successfully!');
+    console.log('✅ Total babies created:', allBabies.length);
+    allBabies.forEach(baby => {
+      console.log(`  - ${baby.name} (${baby.id})`);
+    });
   } catch (error) {
     console.error('Error initializing dummy data:', error);
     throw error;
