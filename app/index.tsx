@@ -422,6 +422,11 @@ export default function HomeScreen() {
         hour12: false 
       });
     }
+    
+    if (diffMins < 1) {
+      return 'Just now';
+    }
+    
     return `${diffMins}m ago`;
   };
 

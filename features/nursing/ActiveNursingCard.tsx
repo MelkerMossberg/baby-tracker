@@ -11,7 +11,9 @@ interface ActiveNursingCardProps {
 
 export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSide, onStop }: ActiveNursingCardProps) {
   const getSideButtonStyle = (side: NursingSide) => ({
-    backgroundColor: currentSide === side ? '#22543D' : '#161020'
+    backgroundColor: currentSide === side ? '#22543D' : '#161020',
+    borderWidth: currentSide === side ? 0 : 1,
+    borderColor: currentSide === side ? 'transparent' : '#A9A6B5'
   });
 
   const getSideDisplayText = (side: NursingSide): string => {
@@ -19,7 +21,7 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
   };
 
   return (
-    <View className="mx-4 mb-4 rounded-2xl p-4 shadow-lg bg-card-main">
+    <View className="mb-4 rounded-2xl p-4 shadow-lg bg-card-main">
       <View className="flex-row justify-between items-center mb-4">
         <View>
           <Text className="text-text-main text-lg font-serif" style={{ fontFamily: 'DM Serif Display' }}>
@@ -39,10 +41,6 @@ export default function ActiveNursingCard({ elapsedTime, currentSide, onSwitchSi
       </View>
 
       <View>
-        <Text className="text-text-muted mb-2" style={{ fontFamily: 'Inter' }}>
-          Current: {getSideDisplayText(currentSide)}
-        </Text>
-        
         <View className="flex-row space-x-2">
           <TouchableOpacity
             className="flex-1 py-2 px-3 rounded-lg items-center"

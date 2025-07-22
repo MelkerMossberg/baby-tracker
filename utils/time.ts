@@ -4,10 +4,10 @@ export function formatDuration(seconds: number): string {
   const remainingSeconds = seconds % 60;
   
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
   }
   if (minutes > 0) {
-    return `${minutes}m`;
+    return `${minutes}m ${remainingSeconds}s`;
   }
   return `${remainingSeconds}s`;
 }
