@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { eventTracker, initializeDummyData, DUMMY_BABY_ID, databaseService } from '../services';
+import { notificationService } from '../services/notificationService';
 import { Event, EventType, NursingSide, BabyProfile } from '../types';
 import { formatDuration } from '../utils/time';
 import { getEventDisplayName } from '../utils/events';
@@ -10,6 +11,10 @@ import EventModal from '../features/general/EventModal';
 import SleepModal from '../features/sleep/SleepModal';
 import BreastSelectionModal from '../components/BreastSelectionModal';
 import ActiveNursingCard from '../features/nursing/ActiveNursingCard';
+import ActiveSleepCard from '../features/sleep/ActiveSleepCard';
+import SleepAdjustTimeModal from '../features/sleep/SleepAdjustTimeModal';
+import SleepDurationModal from '../features/sleep/SleepDurationModal';
+import WakeTimerModal from '../features/sleep/WakeTimerModal';
 import BabySwitcherModal from '../components/BabySwitcherModal';
 import AllEventsModal from '../components/AllEventsModal';
 
@@ -31,6 +36,7 @@ export default function HomeScreen() {
   }, []);
 
   const [isNursingInProgress, setIsNursingInProgress] = useState(false);
+  const [isSleepInProgress, setIsSleepInProgress] = useState(false);
   const [elapsedTime, setElapsedTime] = useState('0m');
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
@@ -43,6 +49,9 @@ export default function HomeScreen() {
   const [showNursingModal, setShowNursingModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showSleepAdjustTimeModal, setShowSleepAdjustTimeModal] = useState(false);
+  const [showSleepDurationModal, setShowSleepDurationModal] = useState(false);
+  const [showWakeTimerModal, setShowWakeTimerModal] = useState(false);
   const [showBreastSelectionModal, setShowBreastSelectionModal] = useState(false);
   const [showBabySwitcherModal, setShowBabySwitcherModal] = useState(false);
   const [showAllEventsModal, setShowAllEventsModal] = useState(false);
@@ -54,6 +63,30 @@ export default function HomeScreen() {
   const [availableBabies, setAvailableBabies] = useState<BabyProfile[]>([]);
   const [isDatabaseReady, setIsDatabaseReady] = useState(false);
   const [stoppedNursingDuration, setStoppedNursingDuration] = useState<number>(0);
+  const [sleepStartTime, setSleepStartTime] = useState<Date>(new Date());
+  const [sleepElapsedTime, setSleepElapsedTime] = useState('0s');
+  const [frozenSleepElapsedTime, setFrozenSleepElapsedTime] = useState<string | null>(null);
+  const [customSleepDurationSeconds, setCustomSleepDurationSeconds] = useState<number | undefined>(undefined);
+  const [originalSleepDurationSeconds, setOriginalSleepDurationSeconds] = useState<number>(0);
+  const [wasEndingSession, setWasEndingSession] = useState<boolean>(false);
+  const [wakeTimerSetFor, setWakeTimerSetFor] = useState<Date | undefined>(undefined);
+  const [wakeTimerTriggered, setWakeTimerTriggered] = useState<boolean>(false);
+
+  // Helper function to parse time strings like "5m 30s" or "1h 23m" to seconds
+  const parseTimeStringToSeconds = (timeString: string): number => {
+    let totalSeconds = 0;
+    
+    // Match hours (h), minutes (m), and seconds (s)
+    const hourMatch = timeString.match(/(\d+)h/);
+    const minuteMatch = timeString.match(/(\d+)m/);
+    const secondMatch = timeString.match(/(\d+)s/);
+    
+    if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+    if (minuteMatch) totalSeconds += parseInt(minuteMatch[1]) * 60;
+    if (secondMatch) totalSeconds += parseInt(secondMatch[1]);
+    
+    return totalSeconds || 300; // Default 5 minutes if can't parse
+  };
 
   useEffect(() => {
     initializeApp();
@@ -62,10 +95,28 @@ export default function HomeScreen() {
       if (eventTracker.isNursingInProgress()) {
         setElapsedTime(eventTracker.getElapsedTime());
       }
+      if (eventTracker.isSleepInProgress() && frozenSleepElapsedTime === null) {
+        setSleepElapsedTime(eventTracker.getSleepElapsedTime());
+        
+        // Check wake timer status
+        const sleepSession = eventTracker.getSleepSession();
+        if (sleepSession) {
+          setWakeTimerSetFor(sleepSession.wakeTimerSetFor);
+          
+          // Check if wake timer should trigger
+          if (eventTracker.isWakeTimerTriggered() && !wakeTimerTriggered) {
+            setWakeTimerTriggered(true);
+            // Show notification
+            notificationService.showWakeUpNotification(currentBaby?.name);
+          } else if (!eventTracker.isWakeTimerTriggered()) {
+            setWakeTimerTriggered(false);
+          }
+        }
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [frozenSleepElapsedTime, wakeTimerTriggered, currentBaby]);
 
   const initializeApp = async () => {
     try {
@@ -80,11 +131,21 @@ export default function HomeScreen() {
       
       await loadBabies();
       setIsNursingInProgress(eventTracker.isNursingInProgress());
+      setIsSleepInProgress(eventTracker.isSleepInProgress());
+      
       if (eventTracker.isNursingInProgress()) {
         setElapsedTime(eventTracker.getElapsedTime());
         const activeSession = eventTracker.getActiveNursingSession();
         if (activeSession) {
           setCurrentNursingSide(activeSession.side);
+        }
+      }
+      
+      if (eventTracker.isSleepInProgress()) {
+        setSleepElapsedTime(eventTracker.getSleepElapsedTime());
+        const activeSleepSession = eventTracker.getSleepSession();
+        if (activeSleepSession) {
+          setSleepStartTime(activeSleepSession.startTime);
         }
       }
     } catch (error) {
@@ -302,9 +363,56 @@ export default function HomeScreen() {
     setCurrentEventType(type);
     setCurrentEventTitle(title);
     if (type === 'sleep') {
-      setShowSleepModal(true);
+      await handleSleepPress();
     } else {
       setShowEventModal(true);
+    }
+  };
+
+  const handleSleepPress = async () => {
+    try {
+      if (isSleepInProgress) {
+        // Stop the sleep session and show completion modal
+        const activeSleepSession = eventTracker.getSleepSession();
+        if (activeSleepSession) {
+          setSleepStartTime(activeSleepSession.startTime);
+          // Freeze the timer at current elapsed time
+          const currentElapsed = eventTracker.getSleepElapsedTime();
+          setFrozenSleepElapsedTime(currentElapsed);
+          setSleepElapsedTime(currentElapsed);
+        }
+        // Stop the session immediately to freeze the timer
+        setIsSleepInProgress(false);
+        setWasEndingSession(true);
+        setShowSleepModal(true);
+      } else {
+        // Start a new sleep session
+        if (!currentBaby) {
+          Alert.alert('Error', 'No baby selected');
+          return;
+        }
+        
+        if (!eventTracker.canLogEvents(currentBaby.id)) {
+          Alert.alert('Info', 'Sleep tracking is not available with test data.');
+          return;
+        }
+        
+        await eventTracker.startSleepSession(currentBaby.id);
+        setIsSleepInProgress(true);
+        setSleepStartTime(new Date());
+        setSleepElapsedTime('0s');
+        setFrozenSleepElapsedTime(null); // Reset frozen time for new session
+        setWakeTimerSetFor(undefined); // Reset wake timer for new session
+        setWakeTimerTriggered(false);
+        Toast.show({
+          type: 'success',
+          text1: 'Sleep Started',
+          text2: 'Sleep timer is now running'
+        });
+      }
+    } catch (error) {
+      console.error('Error handling sleep session:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to manage sleep session');
     }
   };
 
@@ -334,27 +442,58 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSleepSave = async (startTime: Date, endTime: Date, notes: string) => {
+  const handleSleepSave = async (param1: Date | string, param2?: Date | number, param3?: string) => {
     try {
       if (!currentBaby) {
         Alert.alert('Error', 'No baby selected');
         return;
       }
       
-      // Only block if using fallback test data (not mock database)
       if (!eventTracker.canLogEvents(currentBaby.id)) {
         Alert.alert('Info', 'Sleep logging is not available with test data.');
         return;
       }
       
-      await eventTracker.addSleepEvent(currentBaby.id, startTime, endTime, notes);
-      await loadData();
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      Toast.show({
-        type: 'success',
-        text1: 'Sleep Logged',
-        text2: `${formatDuration(duration)} session saved`
-      });
+      if (typeof param1 === 'string') {
+        // Session completion - param1 is notes, param2 is optional custom duration
+        const notes = param1;
+        const customDuration = typeof param2 === 'number' ? param2 : undefined;
+        
+        const event = await eventTracker.stopSleepSession(notes);
+        
+        // If custom duration is provided, update the event
+        if (customDuration && customDuration !== event.duration) {
+          const updatedEvent = { ...event, duration: customDuration };
+          await eventTracker.updateEvent(updatedEvent);
+        }
+        
+        setIsSleepInProgress(false);
+        setSleepElapsedTime('0s');
+        setFrozenSleepElapsedTime(null); // Reset frozen time after completion
+        setCustomSleepDurationSeconds(undefined); // Reset custom duration
+        setWasEndingSession(false); // Reset ending session flag
+        setWakeTimerSetFor(undefined); // Reset wake timer after completion
+        setWakeTimerTriggered(false);
+        await loadData();
+        Toast.show({
+          type: 'success',
+          text1: 'Sleep Complete',
+          text2: `${formatDuration(customDuration || event.duration || 0)} session saved`
+        });
+      } else if (param2 && param1 instanceof Date && param2 instanceof Date) {
+        // Manual sleep logging - param1 is startTime, param2 is endTime, param3 is notes
+        const startTime = param1;
+        const endTime = param2;
+        const notes = param3 || '';
+        await eventTracker.addSleepEvent(currentBaby.id, startTime, endTime, notes);
+        await loadData();
+        const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+        Toast.show({
+          type: 'success',
+          text1: 'Sleep Logged',
+          text2: `${formatDuration(duration)} session saved`
+        });
+      }
     } catch (error) {
       console.error('Error saving sleep event:', error);
       Alert.alert('Error', 'Failed to save sleep event');
@@ -395,6 +534,138 @@ export default function HomeScreen() {
       }
     }
     setShowNursingModal(true);
+  };
+
+  const handleStopSleepFromCard = async () => {
+    const activeSleepSession = eventTracker.getSleepSession();
+    if (activeSleepSession) {
+      setSleepStartTime(activeSleepSession.startTime);
+      // Freeze the timer at current elapsed time
+      const currentElapsed = eventTracker.getSleepElapsedTime();
+      setFrozenSleepElapsedTime(currentElapsed);
+      setSleepElapsedTime(currentElapsed);
+      // Stop the session immediately to freeze the timer
+      setIsSleepInProgress(false);
+      setWasEndingSession(true);
+    }
+    setShowSleepModal(true);
+  };
+
+  const handleAdjustSleepStartTime = () => {
+    setShowSleepAdjustTimeModal(true);
+  };
+
+  const handleSleepStartTimeAdjust = async (newStartTime: Date) => {
+    try {
+      await eventTracker.adjustSleepStartTime(newStartTime);
+      setSleepStartTime(newStartTime);
+      Toast.show({
+        type: 'success',
+        text1: 'Start Time Adjusted',
+        text2: 'Sleep timer updated'
+      });
+    } catch (error) {
+      console.error('Error adjusting sleep start time:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to adjust start time');
+    }
+  };
+
+  const handleEditSleepDuration = () => {
+    // Store the original duration for the picker
+    const activeSleepSession = eventTracker.getSleepSession();
+    if (activeSleepSession) {
+      const now = new Date();
+      const originalDuration = Math.floor((now.getTime() - activeSleepSession.startTime.getTime()) / 1000);
+      setOriginalSleepDurationSeconds(customSleepDurationSeconds || originalDuration);
+    } else {
+      // If no active session, use the frozen elapsed time
+      const timeString = frozenSleepElapsedTime || sleepElapsedTime;
+      const originalDuration = customSleepDurationSeconds || parseTimeStringToSeconds(timeString);
+      setOriginalSleepDurationSeconds(originalDuration);
+    }
+    
+    // Close the sleep modal first, then open duration modal
+    setShowSleepModal(false);
+    setTimeout(() => {
+      setShowSleepDurationModal(true);
+    }, 100);
+  };
+
+  const handleSleepDurationSave = (durationSeconds: number) => {
+    setCustomSleepDurationSeconds(durationSeconds);
+    
+    // Close duration modal and reopen sleep modal
+    setShowSleepDurationModal(false);
+    setTimeout(() => {
+      setShowSleepModal(true);
+    }, 100);
+    
+    Toast.show({
+      type: 'success',
+      text1: 'Duration Updated',
+      text2: 'Sleep duration has been adjusted'
+    });
+  };
+
+  const handleDiscardSleepSession = async () => {
+    try {
+      await eventTracker.cancelSleepSession();
+      setIsSleepInProgress(false);
+      setSleepElapsedTime('0s');
+      setFrozenSleepElapsedTime(null);
+      setCustomSleepDurationSeconds(undefined);
+      setWasEndingSession(false);
+      setWakeTimerSetFor(undefined);
+      setWakeTimerTriggered(false);
+      setShowSleepModal(false);
+      
+      Toast.show({
+        type: 'info',
+        text1: 'Sleep Session Discarded',
+        text2: 'Timer has been stopped'
+      });
+    } catch (error) {
+      console.error('Error discarding sleep session:', error);
+      Alert.alert('Error', 'Failed to discard sleep session');
+    }
+  };
+
+  const handleSetWakeTimer = () => {
+    setShowWakeTimerModal(true);
+  };
+
+  const handleWakeTimerSave = async (wakeTime: Date) => {
+    try {
+      await eventTracker.setWakeTimer(wakeTime);
+      setWakeTimerSetFor(wakeTime);
+      setWakeTimerTriggered(false);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Wake Timer Set',
+        text2: `Will alert at ${wakeTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+      });
+    } catch (error) {
+      console.error('Error setting wake timer:', error);
+      Alert.alert('Error', 'Failed to set wake timer');
+    }
+  };
+
+  const handleCancelWakeTimer = async () => {
+    try {
+      await eventTracker.cancelWakeTimer();
+      setWakeTimerSetFor(undefined);
+      setWakeTimerTriggered(false);
+      
+      Toast.show({
+        type: 'info',
+        text1: 'Wake Timer Cancelled',
+        text2: 'Timer has been removed'
+      });
+    } catch (error) {
+      console.error('Error cancelling wake timer:', error);
+      Alert.alert('Error', 'Failed to cancel wake timer');
+    }
   };
 
   const handleBabySwitch = async (baby: BabyProfile) => {
@@ -488,11 +759,28 @@ export default function HomeScreen() {
         />
       )}
 
+      {/* Active Sleep Card */}
+      {isSleepInProgress && (
+        <ActiveSleepCard
+          startTime={sleepStartTime}
+          elapsedTime={frozenSleepElapsedTime || sleepElapsedTime}
+          onStop={handleStopSleepFromCard}
+          onAdjustStartTime={handleAdjustSleepStartTime}
+          wakeTimerSetFor={wakeTimerSetFor}
+          wakeTimerTriggered={wakeTimerTriggered}
+          onSetWakeTimer={handleSetWakeTimer}
+          onCancelWakeTimer={handleCancelWakeTimer}
+          babyName={currentBaby?.name}
+        />
+      )}
+
 
       {/* Hero Message */}
-      <Text className="text-3xl font-serif text-text-main mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
-        {currentBaby ? `Soon time for ${currentBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
-      </Text>
+      {!isSleepInProgress && !isNursingInProgress && (
+        <Text className="text-3xl font-serif text-text-main mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
+          {currentBaby ? `Soon time for ${currentBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
+        </Text>
+      )}
 
       {/* Recent Activity */}
       <View className="flex-row justify-between items-center mb-4">
@@ -566,11 +854,18 @@ export default function HomeScreen() {
     </TouchableOpacity>
 
     <TouchableOpacity 
-      className="w-[48%] rounded-2xl p-6 shadow-lg items-center bg-card-main" 
+      className={`w-[48%] rounded-2xl p-6 shadow-lg items-center ${isSleepInProgress ? 'bg-blue-600' : 'bg-card-main'}`}
       onPress={() => handleQuickEvent('sleep', 'Sleep')}
     >
       <Image source={require('../assets/img/icons/sleep.png')} className="w-12 h-12 mb-3" />
-      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>Sleep</Text>
+      <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+        {isSleepInProgress ? 'Stop Sleep' : 'Sleep'}
+      </Text>
+      {isSleepInProgress && (
+        <Text className="text-blue-300 text-sm mt-1" style={{ fontFamily: 'Inter' }}>
+          {frozenSleepElapsedTime || sleepElapsedTime}
+        </Text>
+      )}
     </TouchableOpacity>
   </View>
 
@@ -663,8 +958,43 @@ export default function HomeScreen() {
       
       <SleepModal
         visible={showSleepModal}
-        onClose={() => setShowSleepModal(false)}
+        onClose={() => {
+          setShowSleepModal(false);
+          // If user cancels while a sleep session was in progress, restart the tracking
+          if (eventTracker.getSleepSession()) {
+            setIsSleepInProgress(true);
+            setFrozenSleepElapsedTime(null); // Unfreeze the timer
+            setCustomSleepDurationSeconds(undefined); // Reset custom duration
+          }
+          setWasEndingSession(false); // Reset ending session flag
+        }}
         onSave={handleSleepSave}
+        sleepDuration={frozenSleepElapsedTime || sleepElapsedTime}
+        isEndingSession={wasEndingSession}
+        onEditDuration={handleEditSleepDuration}
+        customDurationSeconds={customSleepDurationSeconds}
+        onDiscard={handleDiscardSleepSession}
+      />
+      
+      <SleepAdjustTimeModal
+        visible={showSleepAdjustTimeModal}
+        onClose={() => setShowSleepAdjustTimeModal(false)}
+        onSave={handleSleepStartTimeAdjust}
+        currentStartTime={sleepStartTime}
+      />
+      
+      <SleepDurationModal
+        visible={showSleepDurationModal}
+        onClose={() => setShowSleepDurationModal(false)}
+        onSave={handleSleepDurationSave}
+        currentDurationSeconds={originalSleepDurationSeconds}
+      />
+      
+      <WakeTimerModal
+        visible={showWakeTimerModal}
+        onClose={() => setShowWakeTimerModal(false)}
+        onSave={handleWakeTimerSave}
+        currentTime={new Date()}
       />
       
       <BreastSelectionModal

@@ -30,13 +30,8 @@ const dummyUser: User = {
 
 export async function initializeDummyData(): Promise<void> {
   try {
-    console.log('🔄 Starting database initialization...');
-    
-    // Initialize database service (now uses mock database)
     await databaseService.initialize();
-    console.log('✅ Database initialized successfully');
 
-    console.log('🔍 Checking for existing baby profiles...');
     let existingBaby: BabyProfile | null = null;
     let existingBaby2: BabyProfile | null = null;
     
@@ -44,34 +39,16 @@ export async function initializeDummyData(): Promise<void> {
       existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
       existingBaby2 = await databaseService.getBabyProfile(DUMMY_BABY_2_ID);
     } catch (error) {
-      console.log('🔍 No existing babies found, will create new ones');
+      // No existing babies found, will create new ones
     }
-    
-    console.log('🔍 Existing baby 1 (Otis):', existingBaby ? 'Found' : 'Not found');
-    console.log('🔍 Existing baby 2 (Luna):', existingBaby2 ? 'Found' : 'Not found');
     
     if (existingBaby && existingBaby2) {
-      console.log('✅ All dummy data already exists, skipping creation');
-      // Still verify they are retrievable
-      try {
-        const allBabies = await databaseService.getAllBabyProfiles();
-        console.log('✅ Verification: Found', allBabies.length, 'babies total');
-      } catch (error) {
-        console.log('⚠️ Could not verify existing babies, will recreate');
-      }
-      return;
+      return; // Data already exists
     }
 
-    console.log('👶 Creating baby profiles...');
     await databaseService.createBabyProfile(dummyBaby);
-    console.log('✅ Baby profile created: Otis');
-    
     await databaseService.createBabyProfile(dummyBaby2);
-    console.log('✅ Baby profile created: Luna (no events)');
-
-    console.log('👤 Creating user...');
     await databaseService.createUser(dummyUser);
-    console.log('✅ User created');
 
     const now = new Date();
     const today = new Date(now);
@@ -134,10 +111,8 @@ export async function initializeDummyData(): Promise<void> {
       }
     ];
 
-    console.log(`📝 Creating ${dummyEvents.length} events...`);
     for (let i = 0; i < dummyEvents.length; i++) {
       const eventData = dummyEvents[i];
-      console.log(`📝 Creating event ${i + 1}/${dummyEvents.length}: ${eventData.type}`);
       try {
         await eventTracker.addManualEvent(
           eventData.babyId,
@@ -147,21 +122,11 @@ export async function initializeDummyData(): Promise<void> {
           eventData.notes,
           eventData.side
         );
-        console.log(`✅ Event ${i + 1} created successfully`);
       } catch (error) {
-        console.error(`❌ Error creating event ${i + 1}:`, error);
+        console.error(`Error creating event ${i + 1}:`, error);
         throw error;
       }
     }
-
-    // Final verification that babies were created successfully
-    console.log('🔍 Final verification - loading all baby profiles...');
-    const allBabies = await databaseService.getAllBabyProfiles();
-    console.log('🎉 Dummy data initialized successfully!');
-    console.log('✅ Total babies created:', allBabies.length);
-    allBabies.forEach(baby => {
-      console.log(`  - ${baby.name} (${baby.id})`);
-    });
   } catch (error) {
     console.error('Error initializing dummy data:', error);
     throw error;
@@ -186,7 +151,6 @@ export async function clearAllData(): Promise<void> {
     for (const event of events) {
       await databaseService.deleteEvent(event.id);
     }
-    console.log('All data cleared successfully');
   } catch (error) {
     console.error('Error clearing data:', error);
     throw error;

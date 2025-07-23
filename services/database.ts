@@ -4,11 +4,6 @@ import { MockDatabaseService } from './mockDatabase';
 
 const USE_MOCK_DB = true;
 
-// Debug: Log SQLite object to see what's available (disabled for production)
-// console.log('SQLite object:', SQLite);
-// console.log('SQLite keys:', Object.keys(SQLite));
-// console.log('openDatabaseAsync type:', typeof SQLite.openDatabaseAsync);
-// console.log('openDatabaseAsync function:', SQLite.openDatabaseAsync?.toString?.());
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;

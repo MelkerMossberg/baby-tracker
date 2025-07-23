@@ -41,12 +41,7 @@ class LiveActivityService {
       this.isSupported = support.isSupported;
       this.isEnabled = support.areActivitiesEnabled;
       
-      console.log('Live Activity support:', {
-        supported: this.isSupported,
-        enabled: this.isEnabled
-      });
     } catch (error) {
-      console.log('Live Activities not available:', error);
       this.isSupported = false;
       this.isEnabled = false;
     }
@@ -57,16 +52,14 @@ class LiveActivityService {
    */
   async startNursingActivity(side: 'left' | 'right', babyName?: string): Promise<boolean> {
     if (!this.isSupported || !RNNursingLiveActivity) {
-      console.log('Live Activities not supported');
       return false;
     }
 
     try {
       const result = await RNNursingLiveActivity.startNursingLiveActivity(side, babyName);
-      console.log('✅ Started nursing Live Activity:', result.message);
       return result.success;
     } catch (error) {
-      console.error('❌ Failed to start nursing Live Activity:', error);
+      console.error('Failed to start nursing Live Activity:', error);
       return false;
     }
   }
@@ -81,10 +74,9 @@ class LiveActivityService {
 
     try {
       const result = await RNNursingLiveActivity.stopNursingLiveActivity();
-      console.log('✅ Stopped nursing Live Activity:', result.message);
       return result.success;
     } catch (error) {
-      console.error('❌ Failed to stop nursing Live Activity:', error);
+      console.error('Failed to stop nursing Live Activity:', error);
       return false;
     }
   }
@@ -99,10 +91,9 @@ class LiveActivityService {
 
     try {
       const result = await RNNursingLiveActivity.updateNursingSide(side);
-      console.log('✅ Updated nursing side:', result.message);
       return result.success;
     } catch (error) {
-      console.error('❌ Failed to update nursing side:', error);
+      console.error('Failed to update nursing side:', error);
       return false;
     }
   }

@@ -9,9 +9,7 @@ export class MockDatabaseService {
   private isInitialized = false;
 
   async initialize(): Promise<void> {
-    console.log('🔧 Initializing mock database...');
     this.isInitialized = true;
-    console.log('✅ Mock database initialized');
   }
 
   async createBabyProfile(baby: BabyProfile): Promise<void> {
@@ -19,13 +17,10 @@ export class MockDatabaseService {
     
     const existingIndex = mockBabyProfiles.findIndex(b => b.id === baby.id);
     if (existingIndex >= 0) {
-      console.log('✅ Mock baby profile updated:', baby.name);
       mockBabyProfiles[existingIndex] = baby;
     } else {
-      console.log('✅ Mock baby profile created:', baby.name);
       mockBabyProfiles.push(baby);
     }
-    console.log('📊 Total mock babies now:', mockBabyProfiles.length);
   }
 
   async getBabyProfile(id: string): Promise<BabyProfile | null> {
@@ -49,7 +44,6 @@ export class MockDatabaseService {
     } else {
       mockUsers.push(user);
     }
-    console.log('✅ Mock user created:', user.name);
   }
 
   async getUser(id: string): Promise<User | null> {
@@ -68,7 +62,6 @@ export class MockDatabaseService {
     } else {
       mockEvents.push(event);
     }
-    console.log('✅ Mock event created:', event.type);
   }
 
   async getEventsForBaby(babyId: string, limit?: number): Promise<Event[]> {
@@ -106,7 +99,6 @@ export class MockDatabaseService {
     if (index >= 0) {
       mockEvents[index] = event;
     }
-    console.log('✅ Mock event updated:', event.type);
   }
 
   async deleteEvent(eventId: string): Promise<void> {
@@ -116,7 +108,6 @@ export class MockDatabaseService {
     if (index >= 0) {
       mockEvents.splice(index, 1);
     }
-    console.log('✅ Mock event deleted');
   }
 
   // Clear all mock data
@@ -124,6 +115,5 @@ export class MockDatabaseService {
     mockBabyProfiles = [];
     mockUsers = [];
     mockEvents = [];
-    console.log('✅ Mock database cleared');
   }
 }

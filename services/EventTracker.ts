@@ -9,8 +9,17 @@ export interface ActiveNursingSession {
   startTime: Date;
 }
 
+export interface ActiveSleepSession {
+  eventId: string;
+  babyId: string;
+  startTime: Date;
+  wakeTimerSetFor?: Date;
+  wakeTimerTriggered?: boolean;
+}
+
 class EventTracker {
   private activeNursingSession: ActiveNursingSession | null = null;
+  private activeSleepSession: ActiveSleepSession | null = null;
 
   private generateId(): string {
     return Date.now().toString() + Math.random().toString(36).substring(2, 11);
@@ -84,6 +93,133 @@ class EventTracker {
     }
 
     this.activeNursingSession = null;
+  }
+
+  // MARK: - Sleep Session Methods
+
+  async startSleepSession(babyId: string, startTime?: Date): Promise<string> {
+    if (this.activeSleepSession) {
+      throw new Error('Sleep session already in progress. Please stop the current session first.');
+    }
+
+    const eventId = this.generateId();
+    const sessionStartTime = startTime || new Date();
+
+    this.activeSleepSession = {
+      eventId,
+      babyId,
+      startTime: sessionStartTime
+    };
+
+    return eventId;
+  }
+
+  async stopSleepSession(notes?: string): Promise<Event> {
+    if (!this.activeSleepSession) {
+      throw new Error('No active sleep session to stop.');
+    }
+
+    const endTime = new Date();
+    const duration = Math.floor((endTime.getTime() - this.activeSleepSession.startTime.getTime()) / 1000);
+
+    const event: Event = {
+      id: this.activeSleepSession.eventId,
+      type: 'sleep',
+      timestamp: this.activeSleepSession.startTime,
+      duration: Math.max(0, duration),
+      notes,
+      babyId: this.activeSleepSession.babyId
+    };
+
+    await databaseService.createEvent(event);
+
+    // Store as last created event for potential updates
+    this.lastCreatedEvent = event;
+
+    this.activeSleepSession = null;
+
+    return event;
+  }
+
+  getSleepSession(): ActiveSleepSession | null {
+    return this.activeSleepSession;
+  }
+
+  isSleepInProgress(): boolean {
+    return this.activeSleepSession !== null;
+  }
+
+  async adjustSleepStartTime(newStartTime: Date): Promise<void> {
+    if (!this.activeSleepSession) {
+      throw new Error('No active sleep session to adjust.');
+    }
+
+    // Validate the new start time
+    const now = new Date();
+    const maxHoursBack = 12;
+    const earliestAllowed = new Date(now.getTime() - (maxHoursBack * 60 * 60 * 1000));
+
+    if (newStartTime < earliestAllowed) {
+      throw new Error(`Start time cannot be more than ${maxHoursBack} hours ago.`);
+    }
+
+    if (newStartTime > now) {
+      throw new Error('Start time cannot be in the future.');
+    }
+
+    this.activeSleepSession.startTime = newStartTime;
+  }
+
+  async cancelSleepSession(): Promise<void> {
+    if (!this.activeSleepSession) {
+      throw new Error('No active sleep session to cancel.');
+    }
+
+    this.activeSleepSession = null;
+  }
+
+  async setWakeTimer(wakeTime: Date): Promise<void> {
+    if (!this.activeSleepSession) {
+      throw new Error('No active sleep session to set wake timer for.');
+    }
+
+    this.activeSleepSession.wakeTimerSetFor = wakeTime;
+    this.activeSleepSession.wakeTimerTriggered = false;
+  }
+
+  async cancelWakeTimer(): Promise<void> {
+    if (!this.activeSleepSession) {
+      throw new Error('No active sleep session to cancel wake timer for.');
+    }
+
+    this.activeSleepSession.wakeTimerSetFor = undefined;
+    this.activeSleepSession.wakeTimerTriggered = undefined;
+  }
+
+  isWakeTimerTriggered(): boolean {
+    if (!this.activeSleepSession?.wakeTimerSetFor) {
+      return false;
+    }
+
+    const now = new Date();
+    const isTriggered = now.getTime() >= this.activeSleepSession.wakeTimerSetFor.getTime();
+    
+    // Mark as triggered if it hasn't been marked yet
+    if (isTriggered && !this.activeSleepSession.wakeTimerTriggered) {
+      this.activeSleepSession.wakeTimerTriggered = true;
+    }
+
+    return isTriggered;
+  }
+
+  getSleepElapsedTime(): string {
+    if (!this.activeSleepSession) {
+      return '0s';
+    }
+
+    const now = new Date();
+    const elapsed = Math.floor((now.getTime() - this.activeSleepSession.startTime.getTime()) / 1000);
+    return this.formatDuration(Math.max(0, elapsed));
   }
 
   async addManualEvent(

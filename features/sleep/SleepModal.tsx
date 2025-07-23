@@ -1,39 +1,64 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { formatDuration } from '../../utils/time';
 
 interface SleepModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (startTime: Date, endTime: Date, notes: string) => void;
+  onSave: (notes: string, customDurationSeconds?: number) => void;
+  sleepDuration?: string;
+  sleepDurationSeconds?: number;
+  isEndingSession?: boolean;
+  onEditDuration?: () => void;
+  customDurationSeconds?: number;
+  onDiscard?: () => void;
 }
 
-export default function SleepModal({ visible, onClose, onSave }: SleepModalProps) {
+export default function SleepModal({ visible, onClose, onSave, sleepDuration, sleepDurationSeconds, isEndingSession = false, onEditDuration, customDurationSeconds: propCustomDurationSeconds, onDiscard }: SleepModalProps) {
   const [notes, setNotes] = useState('');
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
-  const [durationHours, setDurationHours] = useState('2');
-  const [durationMinutes, setDurationMinutes] = useState('0');
 
   const handleSave = () => {
-    const hours = parseInt(durationHours) || 0;
-    const minutes = parseInt(durationMinutes) || 0;
-    const totalMinutes = hours * 60 + minutes;
+    if (notes.length > 140) {
+      return; // Notes validation handled by TextInput maxLength
+    }
     
-    const end = new Date();
-    const start = new Date(end.getTime() - totalMinutes * 60 * 1000);
-    
-    onSave(start, end, notes);
+    onSave(notes, propCustomDurationSeconds);
     setNotes('');
-    setDurationHours('2');
-    setDurationMinutes('0');
     onClose();
   };
 
   const handleCancel = () => {
-    setNotes('');
-    setDurationHours('2');
-    setDurationMinutes('0');
-    onClose();
+    if (isEndingSession && onDiscard) {
+      // Show confirmation dialog for active sleep sessions
+      Alert.alert(
+        'Cancel Sleep Session',
+        'What would you like to do?',
+        [
+          {
+            text: 'Keep counting',
+            style: 'cancel',
+            onPress: () => {
+              // Just close the modal and return to timer
+              setNotes('');
+              onClose();
+            }
+          },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              setNotes('');
+              onDiscard();
+            }
+          }
+        ],
+        { cancelable: false }
+      );
+    } else {
+      // Normal cancel behavior for manual sleep logging
+      setNotes('');
+      onClose();
+    }
   };
 
   return (
@@ -46,49 +71,47 @@ export default function SleepModal({ visible, onClose, onSave }: SleepModalProps
       <View className="flex-1 justify-end bg-black/50">
         <View className="bg-[#0E0A13] rounded-t-3xl p-6">
           <Text className="text-xl font-serif text-white mb-6 text-center" style={{ fontFamily: 'DM Serif Display' }}>
-            Log Sleep Session
+            {isEndingSession ? 'End Sleep Session' : 'Log Sleep Session'}
           </Text>
           
-          <Text className="text-lg text-white mb-2" style={{ fontFamily: 'Inter' }}>
-            How long did the baby sleep?
-          </Text>
-          
-          <View className="flex-row items-center mb-4">
-            <TextInput
-              className="bg-[#171021] text-white p-4 rounded-xl flex-1 mr-2"
-              style={{ fontFamily: 'Inter' }}
-              placeholder="Hours"
-              placeholderTextColor="#6B7280"
-              keyboardType="numeric"
-              value={durationHours}
-              onChangeText={setDurationHours}
-            />
-            <Text className="text-white mx-2" style={{ fontFamily: 'Inter' }}>hours</Text>
-            <TextInput
-              className="bg-[#171021] text-white p-4 rounded-xl flex-1 ml-2"
-              style={{ fontFamily: 'Inter' }}
-              placeholder="Minutes"
-              placeholderTextColor="#6B7280"
-              keyboardType="numeric"
-              value={durationMinutes}
-              onChangeText={setDurationMinutes}
-            />
-            <Text className="text-white ml-2" style={{ fontFamily: 'Inter' }}>min</Text>
-          </View>
+          {isEndingSession && sleepDuration && (
+            <View className="mb-4 p-4 bg-[#171021] rounded-xl">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-white text-lg" style={{ fontFamily: 'Inter' }}>
+                  Sleep Duration: {propCustomDurationSeconds ? formatDuration(propCustomDurationSeconds) : sleepDuration}
+                </Text>
+                {onEditDuration && (
+                  <TouchableOpacity 
+                    onPress={onEditDuration}
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-blue-400 text-sm" style={{ fontFamily: 'Inter' }}>
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
 
           <Text className="text-lg text-white mb-2" style={{ fontFamily: 'Inter' }}>
             Notes (optional)
           </Text>
           
           <TextInput
-            className="bg-[#171021] text-white p-4 rounded-xl mb-6"
+            className="bg-[#171021] text-white p-4 rounded-xl mb-2"
             style={{ fontFamily: 'Inter', minHeight: 80 }}
             placeholder="Sleep quality, location, etc..."
             placeholderTextColor="#6B7280"
             multiline
+            maxLength={140}
             value={notes}
             onChangeText={setNotes}
           />
+          
+          <Text className="text-gray-400 text-xs mb-6 text-right" style={{ fontFamily: 'Inter' }}>
+            {notes.length}/140
+          </Text>
 
           <View className="flex-row space-x-4">
             <TouchableOpacity
