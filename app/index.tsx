@@ -9,6 +9,7 @@ import { getEventDisplayName } from '../utils/events';
 import NursingModal from '../features/nursing/NursingModal';
 import EventModal from '../features/general/EventModal';
 import SleepModal from '../features/sleep/SleepModal';
+import PumpingModal from '../features/pumping/PumpingModal';
 import BreastSelectionModal from '../components/BreastSelectionModal';
 import ActiveNursingCard from '../features/nursing/ActiveNursingCard';
 import ActiveSleepCard from '../features/sleep/ActiveSleepCard';
@@ -49,6 +50,7 @@ export default function HomeScreen() {
   const [showNursingModal, setShowNursingModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showPumpingModal, setShowPumpingModal] = useState(false);
   const [showSleepAdjustTimeModal, setShowSleepAdjustTimeModal] = useState(false);
   const [showSleepDurationModal, setShowSleepDurationModal] = useState(false);
   const [showWakeTimerModal, setShowWakeTimerModal] = useState(false);
@@ -364,6 +366,8 @@ export default function HomeScreen() {
     setCurrentEventTitle(title);
     if (type === 'sleep') {
       await handleSleepPress();
+    } else if (type === 'pumping') {
+      setShowPumpingModal(true);
     } else {
       setShowEventModal(true);
     }
@@ -439,6 +443,43 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error saving event:', error);
       Alert.alert('Error', 'Failed to save event');
+    }
+  };
+
+  const handlePumpingSave = async (notes: string, duration?: number, side?: 'left' | 'right' | 'both', milliliters?: number) => {
+    try {
+      if (!currentBaby) {
+        Alert.alert('Error', 'No baby selected');
+        return;
+      }
+      
+      // Only block if using fallback test data (not mock database)
+      if (!eventTracker.canLogEvents(currentBaby.id)) {
+        Alert.alert('Info', 'Pumping logging is not available with test data.');
+        return;
+      }
+      
+      await eventTracker.addPumpingSession(currentBaby.id, undefined, duration, notes, side, milliliters);
+      await loadData();
+      
+      let successMessage = 'Pumping session saved';
+      if (milliliters) {
+        successMessage += ` - ${milliliters}ml`;
+      }
+      if (side && side !== 'both') {
+        successMessage += ` (${side} side)`;
+      } else if (side === 'both') {
+        successMessage += ` (both sides)`;
+      }
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Pumping Logged',
+        text2: successMessage
+      });
+    } catch (error) {
+      console.error('Error saving pumping session:', error);
+      Alert.alert('Error', 'Failed to save pumping session');
     }
   };
 
@@ -953,7 +994,13 @@ export default function HomeScreen() {
         onSave={handleEventSave}
         eventType={currentEventType}
         title={currentEventTitle}
-        showDuration={currentEventType === 'pumping'}
+        showDuration={false}
+      />
+      
+      <PumpingModal
+        visible={showPumpingModal}
+        onClose={() => setShowPumpingModal(false)}
+        onSave={handlePumpingSave}
       />
       
       <SleepModal

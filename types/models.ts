@@ -24,6 +24,9 @@ export interface Event {
   notes?: string;
   side?: NursingSide;
   babyId: string;
+  // Pumping specific fields
+  pumpingSide?: 'left' | 'right' | 'both';
+  milliliters?: number;
 }
 
 export interface NursingEvent extends Event {

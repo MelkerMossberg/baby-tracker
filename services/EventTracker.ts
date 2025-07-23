@@ -274,8 +274,36 @@ class EventTracker {
     return this.addManualEvent(babyId, 'diaper', timestamp, undefined, notes);
   }
 
-  async addPumpingSession(babyId: string, timestamp?: Date, duration?: number, notes?: string): Promise<Event> {
-    return this.addManualEvent(babyId, 'pumping', timestamp, duration, notes);
+  async addPumpingSession(
+    babyId: string, 
+    timestamp?: Date, 
+    duration?: number, 
+    notes?: string, 
+    pumpingSide?: 'left' | 'right' | 'both', 
+    milliliters?: number
+  ): Promise<Event> {
+    const eventId = this.generateId();
+    const eventTimestamp = timestamp || new Date();
+
+    // Validate timestamp
+    if (!eventTimestamp || !(eventTimestamp instanceof Date) || isNaN(eventTimestamp.getTime())) {
+      throw new Error('Invalid timestamp provided for pumping event');
+    }
+
+    const event: Event = {
+      id: eventId,
+      type: 'pumping',
+      timestamp: eventTimestamp,
+      duration,
+      notes,
+      pumpingSide,
+      milliliters,
+      babyId
+    };
+
+    await databaseService.createEvent(event);
+
+    return event;
   }
 
   async addBottleFeeding(babyId: string, timestamp?: Date, notes?: string): Promise<Event> {
