@@ -1,5 +1,5 @@
 import { BabyProfile, User, Event } from '../types/models';
-import { databaseService } from './database';
+import { unifiedDatabaseService } from './unifiedDatabaseService';
 import { eventTracker } from './EventTracker';
 import { testSQLiteBasic } from './debugSQLite';
 
@@ -30,14 +30,22 @@ const dummyUser: User = {
 
 export async function initializeDummyData(): Promise<void> {
   try {
-    await databaseService.initialize();
+    await unifiedDatabaseService.initialize();
+
+    // Check if we're using Supabase
+    if (unifiedDatabaseService.isUsingSupabase()) {
+      // For Supabase, don't create dummy data automatically
+      // The user will create their own babies through the UI
+      console.log('Using Supabase - skipping dummy data creation');
+      return;
+    }
 
     let existingBaby: BabyProfile | null = null;
     let existingBaby2: BabyProfile | null = null;
     
     try {
-      existingBaby = await databaseService.getBabyProfile(DUMMY_BABY_ID);
-      existingBaby2 = await databaseService.getBabyProfile(DUMMY_BABY_2_ID);
+      existingBaby = await unifiedDatabaseService.getBabyProfile(DUMMY_BABY_ID);
+      existingBaby2 = await unifiedDatabaseService.getBabyProfile(DUMMY_BABY_2_ID);
     } catch (error) {
       // No existing babies found, will create new ones
     }
@@ -46,9 +54,9 @@ export async function initializeDummyData(): Promise<void> {
       return; // Data already exists
     }
 
-    await databaseService.createBabyProfile(dummyBaby);
-    await databaseService.createBabyProfile(dummyBaby2);
-    await databaseService.createUser(dummyUser);
+    await unifiedDatabaseService.createBabyProfile(dummyBaby);
+    await unifiedDatabaseService.createBabyProfile(dummyBaby2);
+    await unifiedDatabaseService.createUser(dummyUser);
 
     const now = new Date();
     const today = new Date(now);
@@ -135,9 +143,9 @@ export async function initializeDummyData(): Promise<void> {
 
 export async function clearEventsForBaby(babyId: string): Promise<void> {
   try {
-    const events = await databaseService.getEventsForBaby(babyId);
+    const events = await unifiedDatabaseService.getEventsForBaby(babyId);
     for (const event of events) {
-      await databaseService.deleteEvent(event.id);
+      await unifiedDatabaseService.deleteEvent(event.id);
     }
   } catch (error) {
     console.error('Error clearing events for baby:', error);
@@ -147,9 +155,9 @@ export async function clearEventsForBaby(babyId: string): Promise<void> {
 
 export async function clearAllData(): Promise<void> {
   try {
-    const events = await databaseService.getEventsForBaby(DUMMY_BABY_ID);
+    const events = await unifiedDatabaseService.getEventsForBaby(DUMMY_BABY_ID);
     for (const event of events) {
-      await databaseService.deleteEvent(event.id);
+      await unifiedDatabaseService.deleteEvent(event.id);
     }
   } catch (error) {
     console.error('Error clearing data:', error);

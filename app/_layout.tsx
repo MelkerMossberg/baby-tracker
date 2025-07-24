@@ -1,14 +1,13 @@
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text } from 'react-native';
 import { styled } from 'nativewind';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
 import { initializeDummyData } from '../services';
+import { AuthProvider } from '../hooks/useAuth';
+import AuthenticatedApp from '../components/AuthenticatedApp';
 
 const StyledSafeAreaView = styled(SafeAreaView);
-const StyledView = styled(View);
 const StyledText = styled(Text);
 
 export default function RootLayout() {
@@ -54,22 +53,20 @@ export default function RootLayout() {
 
   if (!appReady) {
     return (
-      <StyledSafeAreaView className="flex-1 items-center justify-center bg-bg-main">
-        <StyledText className="text-text-main text-lg">Loading...</StyledText>
+      <StyledSafeAreaView className="flex-1 items-center justify-center bg-bg-main dark:bg-white">
+        <StyledText 
+          className="text-text-main dark:text-black text-lg" 
+          style={{ fontFamily: 'Inter' }}
+        >
+          Loading...
+        </StyledText>
       </StyledSafeAreaView>
     );
   }
 
   return (
-      <StyledSafeAreaView className="flex-1 bg-bg-main dark:bg-white">
-      <StatusBar style="auto" />
-      <StyledView className="flex-1 p-4 bg-bg-main text-text-main dark:bg-white">
-        <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
-      </StyledView>
-    </StyledSafeAreaView>
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
   );
 }

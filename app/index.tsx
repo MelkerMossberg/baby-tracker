@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { eventTracker, initializeDummyData, DUMMY_BABY_ID, databaseService } from '../services';
+import { eventTracker, initializeDummyData } from '../services';
 import { notificationService } from '../services/notificationService';
 import { Event, EventType, NursingSide, BabyProfile } from '../types';
 import { formatDuration } from '../utils/time';
@@ -16,10 +16,26 @@ import ActiveSleepCard from '../features/sleep/ActiveSleepCard';
 import SleepAdjustTimeModal from '../features/sleep/SleepAdjustTimeModal';
 import SleepDurationModal from '../features/sleep/SleepDurationModal';
 import WakeTimerModal from '../features/sleep/WakeTimerModal';
-import BabySwitcherModal from '../components/BabySwitcherModal';
 import AllEventsModal from '../components/AllEventsModal';
+import CreateBabyModal from '../components/CreateBabyModal';
+import BabySwitcher from '../components/BabySwitcher';
+import { useActiveBaby } from '../hooks/useActiveBaby';
+import { useAuth } from '../hooks/useAuth';
 
 export default function HomeScreen() {
+  // Use the active baby hook
+  const { 
+    activeBabyId, 
+    activeBaby, 
+    babyList, 
+    loading: babyLoading, 
+    error: babyError,
+    refreshBabies 
+  } = useActiveBaby();
+
+  // Use the auth hook
+  const { signOut, user } = useAuth();
+
   // Suppress React Native touch warnings in development
   React.useEffect(() => {
     if (__DEV__) {
@@ -55,14 +71,12 @@ export default function HomeScreen() {
   const [showSleepDurationModal, setShowSleepDurationModal] = useState(false);
   const [showWakeTimerModal, setShowWakeTimerModal] = useState(false);
   const [showBreastSelectionModal, setShowBreastSelectionModal] = useState(false);
-  const [showBabySwitcherModal, setShowBabySwitcherModal] = useState(false);
   const [showAllEventsModal, setShowAllEventsModal] = useState(false);
+  const [showCreateBabyModal, setShowCreateBabyModal] = useState(false);
   const [currentEventType, setCurrentEventType] = useState<EventType>('diaper');
   const [currentEventTitle, setCurrentEventTitle] = useState('');
   const [currentNursingSide, setCurrentNursingSide] = useState<NursingSide>('left');
   const [lastNursingSide, setLastNursingSide] = useState<NursingSide | undefined>(undefined);
-  const [currentBaby, setCurrentBaby] = useState<BabyProfile | null>(null);
-  const [availableBabies, setAvailableBabies] = useState<BabyProfile[]>([]);
   const [isDatabaseReady, setIsDatabaseReady] = useState(false);
   const [stoppedNursingDuration, setStoppedNursingDuration] = useState<number>(0);
   const [sleepStartTime, setSleepStartTime] = useState<Date>(new Date());
@@ -109,7 +123,7 @@ export default function HomeScreen() {
           if (eventTracker.isWakeTimerTriggered() && !wakeTimerTriggered) {
             setWakeTimerTriggered(true);
             // Show notification
-            notificationService.showWakeUpNotification(currentBaby?.name);
+            notificationService.showWakeUpNotification(activeBaby?.name);
           } else if (!eventTracker.isWakeTimerTriggered()) {
             setWakeTimerTriggered(false);
           }
@@ -118,7 +132,14 @@ export default function HomeScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [frozenSleepElapsedTime, wakeTimerTriggered, currentBaby]);
+  }, [frozenSleepElapsedTime, wakeTimerTriggered, activeBaby]);
+
+  // Load data when activeBabyId changes
+  useEffect(() => {
+    if (activeBabyId) {
+      loadData(activeBabyId);
+    }
+  }, [activeBabyId]);
 
   const initializeApp = async () => {
     try {
@@ -131,7 +152,6 @@ export default function HomeScreen() {
         setIsDatabaseReady(false);
       }
       
-      await loadBabies();
       setIsNursingInProgress(eventTracker.isNursingInProgress());
       setIsSleepInProgress(eventTracker.isSleepInProgress());
       
@@ -153,70 +173,21 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error initializing app:', error);
       setIsDatabaseReady(false);
-      // Don't show alert, just ensure we have fallback data
-      await loadBabies(); // This will create test data if needed
+      // Don't show alert, ActiveBabyProvider will handle baby management
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadBabies = async () => {
-    try {
-      // Database should now be properly initialized with mock data
-      const babies = await databaseService.getAllBabyProfiles();
-      
-      if (babies.length > 0) {
-        setAvailableBabies(babies);
-        
-        // Set default to the latest created baby (Luna)
-        const sortedBabies = babies.sort((a, b) => b.birthdate.getTime() - a.birthdate.getTime());
-        const defaultBaby = sortedBabies[0]; // Latest baby (Luna)
-        setCurrentBaby(defaultBaby);
-        await loadData(defaultBaby.id);
-      } else {
-        // If still no babies, something went wrong, use basic fallback
-        const testBabies: BabyProfile[] = [
-          {
-            id: 'test-otis',
-            name: 'Otis',
-            birthdate: new Date('2024-01-15'),
-            shareCode: 'OTIS2024'
-          },
-          {
-            id: 'test-luna', 
-            name: 'Luna',
-            birthdate: new Date('2024-06-20'),
-            shareCode: 'LUNA2024'
-          }
-        ];
-        setAvailableBabies(testBabies);
-        setCurrentBaby(testBabies[1]);
-      }
-    } catch (error) {
-      console.error('Error loading babies:', error);
-      // Fallback to test data
-      const testBabies: BabyProfile[] = [
-        {
-          id: 'test-otis',
-          name: 'Otis',
-          birthdate: new Date('2024-01-15'),
-          shareCode: 'OTIS2024'
-        },
-        {
-          id: 'test-luna', 
-          name: 'Luna',
-          birthdate: new Date('2024-06-20'),
-          shareCode: 'LUNA2024'
-        }
-      ];
-      setAvailableBabies(testBabies);
-      setCurrentBaby(testBabies[1]);
-    }
-  };
 
   const loadData = async (babyId?: string) => {
     try {
-      const targetBabyId = babyId || currentBaby?.id || DUMMY_BABY_ID;
+      const targetBabyId = babyId || activeBabyId;
+      
+      if (!targetBabyId) {
+        console.warn('No baby ID available for loading data');
+        return;
+      }
       
       // Check if we're using fallback test data
       const isUsingTestData = !eventTracker.canLogEvents(targetBabyId);
@@ -297,18 +268,18 @@ export default function HomeScreen() {
 
   const handleBreastSelection = async (side: NursingSide) => {
     try {
-      if (!currentBaby) {
+      if (!activeBaby || !activeBabyId) {
         Alert.alert('Error', 'No baby selected');
         return;
       }
       
       // Only block if using fallback test data (not mock database)
-      if (!eventTracker.canLogEvents(currentBaby.id)) {
+      if (!eventTracker.canLogEvents(activeBabyId)) {
         Alert.alert('Info', 'Nursing session tracking is not available with test data.');
         return;
       }
       
-      await eventTracker.startNursingSession(currentBaby.id, side);
+      await eventTracker.startNursingSession(activeBabyId, side);
       setIsNursingInProgress(true);
       setCurrentNursingSide(side);
       setElapsedTime('0m');
@@ -336,9 +307,9 @@ export default function HomeScreen() {
         }
       } else {
         // Fallback: create a manual event if somehow no event exists
-        if (!currentBaby) throw new Error('No baby selected');
+        if (!activeBaby || !activeBabyId) throw new Error('No baby selected');
         await eventTracker.addManualEvent(
-          currentBaby.id, 
+          activeBabyId, 
           'nursing', 
           new Date(Date.now() - durationSeconds * 1000), 
           durationSeconds, 
@@ -391,17 +362,17 @@ export default function HomeScreen() {
         setShowSleepModal(true);
       } else {
         // Start a new sleep session
-        if (!currentBaby) {
+        if (!activeBaby) {
           Alert.alert('Error', 'No baby selected');
           return;
         }
         
-        if (!eventTracker.canLogEvents(currentBaby.id)) {
+        if (!eventTracker.canLogEvents(activeBabyId)) {
           Alert.alert('Info', 'Sleep tracking is not available with test data.');
           return;
         }
         
-        await eventTracker.startSleepSession(currentBaby.id);
+        await eventTracker.startSleepSession(activeBabyId);
         setIsSleepInProgress(true);
         setSleepStartTime(new Date());
         setSleepElapsedTime('0s');
@@ -422,18 +393,18 @@ export default function HomeScreen() {
 
   const handleEventSave = async (notes: string, duration?: number) => {
     try {
-      if (!currentBaby) {
+      if (!activeBaby || !activeBabyId) {
         Alert.alert('Error', 'No baby selected');
         return;
       }
       
       // Only block if using fallback test data (not mock database)
-      if (!eventTracker.canLogEvents(currentBaby.id)) {
+      if (!eventTracker.canLogEvents(activeBabyId)) {
         Alert.alert('Info', 'Event logging is not available with test data.');
         return;
       }
       
-      await eventTracker.addManualEvent(currentBaby.id, currentEventType, undefined, duration, notes);
+      await eventTracker.addManualEvent(activeBabyId, currentEventType, undefined, duration, notes);
       await loadData();
       Toast.show({
         type: 'success',
@@ -448,18 +419,18 @@ export default function HomeScreen() {
 
   const handlePumpingSave = async (notes: string, duration?: number, side?: 'left' | 'right' | 'both', milliliters?: number) => {
     try {
-      if (!currentBaby) {
+      if (!activeBaby || !activeBabyId) {
         Alert.alert('Error', 'No baby selected');
         return;
       }
       
       // Only block if using fallback test data (not mock database)
-      if (!eventTracker.canLogEvents(currentBaby.id)) {
+      if (!eventTracker.canLogEvents(activeBabyId)) {
         Alert.alert('Info', 'Pumping logging is not available with test data.');
         return;
       }
       
-      await eventTracker.addPumpingSession(currentBaby.id, undefined, duration, notes, side, milliliters);
+      await eventTracker.addPumpingSession(activeBabyId, undefined, duration, notes, side, milliliters);
       await loadData();
       
       let successMessage = 'Pumping session saved';
@@ -485,12 +456,12 @@ export default function HomeScreen() {
 
   const handleSleepSave = async (param1: Date | string, param2?: Date | number, param3?: string) => {
     try {
-      if (!currentBaby) {
+      if (!activeBaby || !activeBabyId) {
         Alert.alert('Error', 'No baby selected');
         return;
       }
       
-      if (!eventTracker.canLogEvents(currentBaby.id)) {
+      if (!eventTracker.canLogEvents(activeBabyId)) {
         Alert.alert('Info', 'Sleep logging is not available with test data.');
         return;
       }
@@ -526,7 +497,7 @@ export default function HomeScreen() {
         const startTime = param1;
         const endTime = param2;
         const notes = param3 || '';
-        await eventTracker.addSleepEvent(currentBaby.id, startTime, endTime, notes);
+        await eventTracker.addSleepEvent(activeBabyId, startTime, endTime, notes);
         await loadData();
         const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
         Toast.show({
@@ -709,15 +680,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleBabySwitch = async (baby: BabyProfile) => {
-    setCurrentBaby(baby);
-    await loadData(baby.id);
-    Toast.show({
-      type: 'success',
-      text1: 'Baby Switched',
-      text2: `Now viewing ${baby.name}`
-    });
-  };
 
   const formatEventTime = (timestamp: Date): string => {
     const now = new Date();
@@ -766,20 +728,32 @@ export default function HomeScreen() {
           <Text className="text-xl font-serif text-text-main" style={{ fontFamily: 'DM Serif Display' }}>
             Baby Tracker
           </Text>
-          <TouchableOpacity 
-            className="flex-row items-center mt-1"
-            onPress={() => setShowBabySwitcherModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text className="text-sm text-text-muted" style={{ fontFamily: 'Inter' }}>
-              ▼ Focused on {currentBaby?.name || (availableBabies.length === 0 ? 'No babies found' : 'Loading...')}
-            </Text>
-          </TouchableOpacity>
+          <BabySwitcher 
+            showCreateButton={true}
+            onCreateBaby={() => setShowCreateBabyModal(true)}
+          />
         </View>
         <TouchableOpacity 
           className="w-10 h-10 bg-card-main rounded-full items-center justify-center"
           onPress={() => {
-            // TODO: Implement account menu
+            Alert.alert(
+              'Sign Out',
+              `Sign out of ${user?.name || 'your account'}?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Sign Out', 
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await signOut();
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to sign out. Please try again.');
+                    }
+                  }
+                }
+              ]
+            );
           }}
           activeOpacity={0.7}
         >
@@ -811,16 +785,33 @@ export default function HomeScreen() {
           wakeTimerTriggered={wakeTimerTriggered}
           onSetWakeTimer={handleSetWakeTimer}
           onCancelWakeTimer={handleCancelWakeTimer}
-          babyName={currentBaby?.name}
+          babyName={activeBaby?.name}
         />
       )}
 
 
       {/* Hero Message */}
       {!isSleepInProgress && !isNursingInProgress && (
-        <Text className="text-3xl font-serif text-text-main mb-8 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
-          {currentBaby ? `Soon time for ${currentBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
-        </Text>
+        <View className="mb-8">
+          <Text className="text-3xl font-serif text-text-main mb-4 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
+            {activeBaby ? `Soon time for ${activeBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
+          </Text>
+          
+          {/* Show create baby button if no babies exist */}
+          {!activeBaby && babyList.length === 0 && (
+            <TouchableOpacity
+              className="bg-blue-600 px-6 py-4 rounded-xl items-center"
+              onPress={() => setShowCreateBabyModal(true)}
+            >
+              <Text className="text-white text-lg font-semibold" style={{ fontFamily: 'Inter' }}>
+                Add Your First Baby
+              </Text>
+              <Text className="text-blue-100 text-sm mt-1" style={{ fontFamily: 'Inter' }}>
+                Start tracking your baby's activities
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       {/* Recent Activity */}
@@ -1051,18 +1042,20 @@ export default function HomeScreen() {
         lastNursingSide={lastNursingSide}
       />
       
-      <BabySwitcherModal
-        visible={showBabySwitcherModal}
-        onClose={() => setShowBabySwitcherModal(false)}
-        onSelectBaby={handleBabySwitch}
-        babies={availableBabies}
-        currentBabyId={currentBaby?.id || ''}
-      />
 
       <AllEventsModal
         visible={showAllEventsModal}
         onClose={() => setShowAllEventsModal(false)}
-        babyId={currentBaby?.id || ''}
+        babyId={activeBabyId || ''}
+      />
+      
+      <CreateBabyModal
+        visible={showCreateBabyModal}
+        onClose={() => setShowCreateBabyModal(false)}
+        onBabyCreated={() => {
+          refreshBabies();
+          setShowCreateBabyModal(false);
+        }}
       />
       </ScrollView>
       

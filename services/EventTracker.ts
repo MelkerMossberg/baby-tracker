@@ -1,5 +1,5 @@
 import { Event, EventType, NursingSide, NursingEvent } from '../types/models';
-import { databaseService } from './database';
+import { unifiedDatabaseService } from './unifiedDatabaseService';
 import { formatDuration } from '../utils/time';
 
 export interface ActiveNursingSession {
@@ -61,7 +61,7 @@ class EventTracker {
       babyId: this.activeNursingSession.babyId
     };
 
-    await databaseService.createEvent(event);
+    await unifiedDatabaseService.createEvent(event);
 
     // Store as last created event for potential duration updates
     this.lastCreatedEvent = event;
@@ -131,7 +131,7 @@ class EventTracker {
       babyId: this.activeSleepSession.babyId
     };
 
-    await databaseService.createEvent(event);
+    await unifiedDatabaseService.createEvent(event);
 
     // Store as last created event for potential updates
     this.lastCreatedEvent = event;
@@ -248,7 +248,7 @@ class EventTracker {
       babyId
     };
 
-    await databaseService.createEvent(event);
+    await unifiedDatabaseService.createEvent(event);
 
     return event;
   }
@@ -301,7 +301,7 @@ class EventTracker {
       babyId
     };
 
-    await databaseService.createEvent(event);
+    await unifiedDatabaseService.createEvent(event);
 
     return event;
   }
@@ -316,7 +316,7 @@ class EventTracker {
 
   async getRecentEvents(babyId: string, limit: number = 10): Promise<Event[]> {
     try {
-      return await databaseService.getEventsForBaby(babyId, limit);
+      return await unifiedDatabaseService.getEventsForBaby(babyId, limit);
     } catch (error) {
       console.warn('Unable to get recent events, database not ready:', error);
       return [];
@@ -325,7 +325,7 @@ class EventTracker {
 
   async getEventsByType(babyId: string, type: EventType, limit?: number): Promise<Event[]> {
     try {
-      return await databaseService.getEventsByType(babyId, type, limit);
+      return await unifiedDatabaseService.getEventsByType(babyId, type, limit);
     } catch (error) {
       console.warn('Unable to get events by type, database not ready:', error);
       return [];
@@ -334,7 +334,7 @@ class EventTracker {
 
   async getTodaysEvents(babyId: string): Promise<Event[]> {
     try {
-      const events = await databaseService.getEventsForBaby(babyId);
+      const events = await unifiedDatabaseService.getEventsForBaby(babyId);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -350,7 +350,7 @@ class EventTracker {
   }
 
   async updateEvent(event: Event): Promise<void> {
-    await databaseService.updateEvent(event);
+    await unifiedDatabaseService.updateEvent(event);
     // Update lastCreatedEvent if it's the same event being updated
     if (this.lastCreatedEvent && this.lastCreatedEvent.id === event.id) {
       this.lastCreatedEvent = event;
@@ -358,7 +358,7 @@ class EventTracker {
   }
 
   async deleteEvent(eventId: string): Promise<void> {
-    await databaseService.deleteEvent(eventId);
+    await unifiedDatabaseService.deleteEvent(eventId);
   }
 
   private lastCreatedEvent: Event | null = null;
@@ -370,12 +370,12 @@ class EventTracker {
   async updateEventDuration(eventId: string, durationSeconds: number): Promise<void> {
     try {
       // Get the event from database
-      const events = await databaseService.getEventsForBaby('', 1000); // Get many to find the right one
+      const events = await unifiedDatabaseService.getEventsForBaby('', 1000); // Get many to find the right one
       const event = events.find(e => e.id === eventId);
       
       if (event) {
         const updatedEvent = { ...event, duration: durationSeconds };
-        await databaseService.updateEvent(updatedEvent);
+        await unifiedDatabaseService.updateEvent(updatedEvent);
         this.lastCreatedEvent = updatedEvent;
       }
     } catch (error) {
