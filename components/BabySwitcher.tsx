@@ -20,7 +20,7 @@ export default function BabySwitcher({ showCreateButton = false, onCreateBaby }:
   const renderBabyItem = ({ item }: { item: BabyWithRole }) => (
     <TouchableOpacity
       className={`p-4 border-b border-gray-700 ${
-        item.id === activeBaby?.id ? 'bg-blue-600/20' : ''
+        item.id === activeBaby?.id ? 'bg-primary/20' : ''
       }`}
       onPress={() => handleBabySelect(item)}
     >
@@ -37,7 +37,7 @@ export default function BabySwitcher({ showCreateButton = false, onCreateBaby }:
           </Text>
         </View>
         {item.id === activeBaby?.id && (
-          <View className="w-6 h-6 bg-blue-600 rounded-full items-center justify-center">
+          <View className="w-6 h-6 bg-primary rounded-full items-center justify-center">
             <Text className="text-white text-xs font-bold">✓</Text>
           </View>
         )}
@@ -63,7 +63,7 @@ export default function BabySwitcher({ showCreateButton = false, onCreateBaby }:
         </Text>
         {showCreateButton && onCreateBaby && (
           <TouchableOpacity
-            className="bg-blue-600 px-3 py-1 rounded-lg"
+            className="bg-primary px-3 py-1 rounded-lg"
             onPress={onCreateBaby}
           >
             <Text className="text-white text-sm font-semibold" style={{ fontFamily: 'Inter' }}>
@@ -78,7 +78,7 @@ export default function BabySwitcher({ showCreateButton = false, onCreateBaby }:
   // Single baby - show name without dropdown
   if (babyList.length === 1) {
     return (
-      <View className="flex-row items-center px-4 py-2">
+      <View className="flex-row items-center">
         <Text className="text-text-main text-lg font-semibold" style={{ fontFamily: 'Inter' }}>
           {activeBaby?.name || 'Unknown Baby'}
         </Text>
@@ -90,13 +90,13 @@ export default function BabySwitcher({ showCreateButton = false, onCreateBaby }:
   return (
     <View>
       <TouchableOpacity
-        className="flex-row items-center px-4 py-2"
+        className="flex-row items-center"
         onPress={() => setShowModal(true)}
       >
-        <Text className="text-text-main text-lg font-semibold mr-2" style={{ fontFamily: 'Inter' }}>
+        <Text className="text-text-muted text-sm mr-2">▼</Text>
+        <Text className="text-text-main text-lg font-semibold" style={{ fontFamily: 'Inter' }}>
           {activeBaby?.name || 'Select Baby'}
         </Text>
-        <Text className="text-text-muted text-sm">▼</Text>
       </TouchableOpacity>
 
       <Modal

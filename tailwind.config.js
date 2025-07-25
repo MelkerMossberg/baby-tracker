@@ -21,6 +21,8 @@ module.exports = {
         'text-main': '#F2F2F2',
         'text-muted': '#A9A6B5',
         'border-subtle': '#0f0d16ff',
+        'primary': '#6032EC',
+        'primary-hover': '#5028D4',
       },
       fontFamily: {
         display: ['"DM Serif Display"', 'serif'],

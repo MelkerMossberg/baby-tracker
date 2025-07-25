@@ -20,6 +20,7 @@ import AllEventsModal from '../components/AllEventsModal';
 import CreateBabyModal from '../components/CreateBabyModal';
 import BabySwitcher from '../components/BabySwitcher';
 import SettingsModal from '../components/SettingsModal';
+import SkeletonLoader, { SkeletonText, SkeletonCard, SkeletonEventRow } from '../components/SkeletonLoader';
 import { useActiveBaby } from '../hooks/useActiveBaby';
 import { useAuth } from '../hooks/useAuth';
 
@@ -731,8 +732,10 @@ export default function HomeScreen() {
           <Text className="text-xl font-serif text-text-main" style={{ fontFamily: 'DM Serif Display' }}>
             Baby Tracker
           </Text>
-          {/* Show baby switcher or "No baby added yet" message */}
-          {!activeBaby && babyList.length === 0 ? (
+          {/* Show baby switcher or loading skeleton */}
+          {babyLoading ? (
+            <SkeletonLoader height={16} width="60%" />
+          ) : !activeBaby && babyList.length === 0 ? (
             <Text className="text-text-muted text-sm" style={{ fontFamily: 'Inter' }}>
               No baby added yet
             </Text>
@@ -744,13 +747,14 @@ export default function HomeScreen() {
           )}
         </View>
         <TouchableOpacity 
-          className="w-10 h-10 bg-card-main rounded-full items-center justify-center"
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
           onPress={() => setShowSettingsModal(true)}
           activeOpacity={0.7}
         >
           <Image 
             source={require('../assets/img/icons/account.png')} 
-            className="w-6 h-6"
+            className="w-7 h-7"
           />
         </TouchableOpacity>
       </View>
@@ -784,8 +788,13 @@ export default function HomeScreen() {
       {/* Hero Message or Onboarding Card */}
       {!isSleepInProgress && !isNursingInProgress && (
         <View className="mb-8">
-          {/* Show onboarding card if no babies exist */}
-          {!activeBaby && babyList.length === 0 ? (
+          {/* Show loading skeleton while babies are loading */}
+          {babyLoading ? (
+            <View className="mb-4">
+              <SkeletonLoader height={120} borderRadius={24} />
+            </View>
+          ) : !activeBaby && babyList.length === 0 ? (
+            /* Show onboarding card if no babies exist */
             <TouchableOpacity
               className="relative rounded-3xl overflow-hidden shadow-lg"
               style={{ height: Dimensions.get('window').height * 0.64 }}
@@ -836,10 +845,14 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           ) : (
-            /* Regular hero message when baby exists */
-            <Text className="text-3xl font-serif text-text-main mb-4 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
-              {activeBaby ? `Soon time for ${activeBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
-            </Text>
+            /* Regular hero message when baby exists or loading */
+            babyLoading ? (
+              <SkeletonText lines={2} className="mb-4" />
+            ) : (
+              <Text className="text-3xl font-serif text-text-main mb-4 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
+                {activeBaby ? `Soon time for ${activeBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
+              </Text>
+            )
           )}
         </View>
       )}
@@ -850,7 +863,7 @@ export default function HomeScreen() {
           Recent activity
         </Text>
         <TouchableOpacity onPress={() => setShowAllEventsModal(true)} activeOpacity={0.7}>
-          <Text className="text-blue-400 text-sm" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-sm" style={{ fontFamily: 'Inter', color: '#926EFF' }}>
             All events
           </Text>
         </TouchableOpacity>
@@ -861,7 +874,14 @@ export default function HomeScreen() {
         onPress={() => allEvents.length > 5 ? setShowAllEventsModal(true) : undefined}
         activeOpacity={allEvents.length > 5 ? 0.7 : 1}
       >
-        {recentEvents.length === 0 ? (
+        {babyLoading || isLoading ? (
+          /* Show skeleton loading for events */
+          <>
+            <SkeletonEventRow className="mb-4" />
+            <SkeletonEventRow className="mb-4" />
+            <SkeletonEventRow />
+          </>
+        ) : recentEvents.length === 0 ? (
           <Text className="text-text-muted text-center" style={{ fontFamily: 'Inter' }}>
             No recent activity
           </Text>
@@ -885,7 +905,7 @@ export default function HomeScreen() {
             
             {allEvents.length > 5 && (
               <View className="mt-3 pt-3 border-t border-text-muted">
-                <Text className="text-blue-400 text-sm text-center" style={{ fontFamily: 'Inter' }}>
+                <Text className="text-primary text-sm text-center" style={{ fontFamily: 'Inter' }}>
                   Show more ({allEvents.length - 5} more events)
                 </Text>
               </View>
@@ -916,7 +936,7 @@ export default function HomeScreen() {
     </TouchableOpacity>
 
     <TouchableOpacity 
-      className={`w-[48%] rounded-2xl p-6 shadow-lg items-center ${isSleepInProgress ? 'bg-blue-600' : 'bg-card-main'}`}
+      className={`w-[48%] rounded-2xl p-6 shadow-lg items-center ${isSleepInProgress ? 'bg-primary' : 'bg-card-main'}`}
       onPress={() => handleQuickEvent('sleep', 'Sleep')}
     >
       <Image source={require('../assets/img/icons/sleep.png')} className="w-12 h-12 mb-3" />
@@ -924,7 +944,7 @@ export default function HomeScreen() {
         {isSleepInProgress ? 'Stop Sleep' : 'Sleep'}
       </Text>
       {isSleepInProgress && (
-        <Text className="text-blue-300 text-sm mt-1" style={{ fontFamily: 'Inter' }}>
+        <Text className="text-white text-sm mt-1" style={{ fontFamily: 'Inter' }}>
           {frozenSleepElapsedTime || sleepElapsedTime}
         </Text>
       )}
@@ -973,30 +993,50 @@ export default function HomeScreen() {
         Today's summary
       </Text>
       <View className="rounded-2xl p-4 shadow-lg mb-8 bg-card-main">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            Feedings
-          </Text>
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            {todaysSummary.feedings} times
-          </Text>
-        </View>
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            Sleep
-          </Text>
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            {todaysSummary.sleepTime}
-          </Text>
-        </View>
-        <View className="flex-row justify-between items-center">
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            Diapers
-          </Text>
-          <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
-            {todaysSummary.diapers} changes
-          </Text>
-        </View>
+        {babyLoading || isLoading ? (
+          /* Show skeleton loading for summary */
+          <>
+            <View className="flex-row justify-between items-center mb-4">
+              <SkeletonLoader height={16} width="30%" />
+              <SkeletonLoader height={16} width="25%" />
+            </View>
+            <View className="flex-row justify-between items-center mb-4">
+              <SkeletonLoader height={16} width="25%" />
+              <SkeletonLoader height={16} width="20%" />
+            </View>
+            <View className="flex-row justify-between items-center">
+              <SkeletonLoader height={16} width="30%" />
+              <SkeletonLoader height={16} width="30%" />
+            </View>
+          </>
+        ) : (
+          <>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                Feedings
+              </Text>
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                {todaysSummary.feedings} times
+              </Text>
+            </View>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                Sleep
+              </Text>
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                {todaysSummary.sleepTime}
+              </Text>
+            </View>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                Diapers
+              </Text>
+              <Text className="text-text-main" style={{ fontFamily: 'Inter' }}>
+                {todaysSummary.diapers} changes
+              </Text>
+            </View>
+          </>
+        )}
       </View>
       </View>
       

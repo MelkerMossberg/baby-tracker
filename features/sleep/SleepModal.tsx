@@ -85,7 +85,7 @@ export default function SleepModal({ visible, onClose, onSave, sleepDuration, sl
                     onPress={onEditDuration}
                     activeOpacity={0.7}
                   >
-                    <Text className="text-blue-400 text-sm" style={{ fontFamily: 'Inter' }}>
+                    <Text className="text-primary text-sm" style={{ fontFamily: 'Inter' }}>
                       Edit
                     </Text>
                   </TouchableOpacity>

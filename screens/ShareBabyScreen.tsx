@@ -163,19 +163,19 @@ export default function ShareBabyScreen({ baby, onBack }: ShareBabyScreenProps) 
 
                 {/* Copy Button */}
                 <TouchableOpacity
-                  className="bg-blue-600 rounded-xl py-4 mb-4"
+                  className="bg-primary rounded-xl py-4 mb-4"
                   onPress={() => copyToClipboard(activeInvite.code)}
                   activeOpacity={0.8}
                 >
                   <Text className="text-white text-lg font-medium text-center" style={{ fontFamily: 'Inter' }}>
-                    📋 Copy Code
+                    Copy Code
                   </Text>
                 </TouchableOpacity>
 
                 {/* Expiry Info */}
                 <View className="bg-yellow-900 rounded-xl p-3">
                   <Text className="text-yellow-300 text-sm text-center" style={{ fontFamily: 'Inter' }}>
-                    ⏰ {formatExpiryTime(activeInvite.expires_at)}
+                    {formatExpiryTime(activeInvite.expires_at)}
                   </Text>
                 </View>
               </View>
@@ -216,7 +216,7 @@ export default function ShareBabyScreen({ baby, onBack }: ShareBabyScreenProps) 
                 </Text>
                 
                 <TouchableOpacity
-                  className={`rounded-xl py-4 ${generating ? 'bg-gray-700' : 'bg-blue-600'}`}
+                  className={`rounded-xl py-4 ${generating ? 'bg-gray-700' : 'bg-primary'}`}
                   onPress={generateNewCode}
                   disabled={generating}
                   activeOpacity={0.8}

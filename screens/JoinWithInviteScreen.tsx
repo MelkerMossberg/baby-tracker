@@ -178,7 +178,7 @@ export default function JoinWithInviteScreen({ onJoinSuccess, onCancel }: JoinWi
           
           {/* Validation states */}
           {validating && (
-            <Text className="text-blue-400 text-sm mt-2 text-center" style={{ fontFamily: 'Inter' }}>
+            <Text className="text-primary text-sm mt-2 text-center" style={{ fontFamily: 'Inter' }}>
               Checking code...
             </Text>
           )}
@@ -222,7 +222,7 @@ export default function JoinWithInviteScreen({ onJoinSuccess, onCancel }: JoinWi
             className={`rounded-xl py-4 items-center ${
               loading || !inviteCode.trim() || codeError
                 ? 'bg-gray-700' 
-                : 'bg-blue-600'
+                : 'bg-primary'
             }`}
             onPress={handleJoin}
             disabled={loading || !inviteCode.trim() || !!codeError}

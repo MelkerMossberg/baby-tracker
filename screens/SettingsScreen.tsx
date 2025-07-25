@@ -172,10 +172,10 @@ export default function SettingsScreen({
                     </Text>
                     <View className="flex-row items-center mt-1">
                       <View className={`px-2 py-1 rounded-full mr-2 ${
-                        baby.role === 'admin' ? 'bg-blue-900' : 'bg-gray-700'
+                        baby.role === 'admin' ? 'bg-primary/20' : 'bg-gray-700'
                       }`}>
                         <Text className={`text-xs font-medium ${
-                          baby.role === 'admin' ? 'text-blue-300' : 'text-gray-300'
+                          baby.role === 'admin' ? 'text-white' : 'text-gray-300'
                         }`} style={{ fontFamily: 'Inter' }}>
                           {getBabyStatusText(baby)}
                         </Text>

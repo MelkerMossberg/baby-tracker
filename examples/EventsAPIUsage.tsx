@@ -96,7 +96,7 @@ export default function EventsAPIUsage({ babyId }: { babyId: string }) {
       {/* Filter Buttons */}
       <View className="flex-row flex-wrap gap-2 mb-4">
         <TouchableOpacity
-          className="bg-blue-600 px-3 py-2 rounded-lg"
+          className="bg-primary px-3 py-2 rounded-lg"
           onPress={() => loadAllExamples()}
         >
           <Text className="text-white text-sm">All Events</Text>

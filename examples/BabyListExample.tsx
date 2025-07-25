@@ -88,7 +88,7 @@ export default function BabyListExample() {
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-text-main text-xl font-bold">My Babies</Text>
         <TouchableOpacity
-          className="bg-blue-600 px-4 py-2 rounded-lg"
+          className="bg-primary px-4 py-2 rounded-lg"
           onPress={handleCreateBaby}
           disabled={loading}
         >

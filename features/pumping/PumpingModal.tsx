@@ -54,7 +54,7 @@ export default function PumpingModal({ visible, onClose, onSave }: PumpingModalP
           <View className="flex-row space-x-3 mb-4">
             <TouchableOpacity
               className={`flex-1 py-3 rounded-xl items-center ${
-                selectedSide === 'left' ? 'bg-blue-600' : 'bg-card-main border border-text-muted'
+                selectedSide === 'left' ? 'bg-primary' : 'bg-card-main border border-text-muted'
               }`}
               onPress={() => setSelectedSide('left')}
             >
@@ -65,7 +65,7 @@ export default function PumpingModal({ visible, onClose, onSave }: PumpingModalP
             
             <TouchableOpacity
               className={`flex-1 py-3 rounded-xl items-center ${
-                selectedSide === 'both' ? 'bg-blue-600' : 'bg-card-main border border-text-muted'
+                selectedSide === 'both' ? 'bg-primary' : 'bg-card-main border border-text-muted'
               }`}
               onPress={() => setSelectedSide('both')}
             >
@@ -76,7 +76,7 @@ export default function PumpingModal({ visible, onClose, onSave }: PumpingModalP
             
             <TouchableOpacity
               className={`flex-1 py-3 rounded-xl items-center ${
-                selectedSide === 'right' ? 'bg-blue-600' : 'bg-card-main border border-text-muted'
+                selectedSide === 'right' ? 'bg-primary' : 'bg-card-main border border-text-muted'
               }`}
               onPress={() => setSelectedSide('right')}
             >
@@ -137,7 +137,7 @@ export default function PumpingModal({ visible, onClose, onSave }: PumpingModalP
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="flex-1 py-4 rounded-xl items-center bg-blue-600"
+              className="flex-1 py-4 rounded-xl items-center bg-primary"
               onPress={handleSave}
             >
               <Text className="text-text-main text-lg" style={{ fontFamily: 'Inter' }}>Save</Text>

@@ -36,7 +36,7 @@ export async function initializeDummyData(): Promise<void> {
     if (unifiedDatabaseService.isUsingSupabase()) {
       // For Supabase, don't create dummy data automatically
       // The user will create their own babies through the UI
-      console.log('Using Supabase - skipping dummy data creation');
+      //console.log('Using Supabase - skipping dummy data creation');
       return;
     }
 

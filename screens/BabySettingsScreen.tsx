@@ -161,10 +161,10 @@ export default function BabySettingsScreen({ visible, babyId, onClose }: BabySet
               Your Role
             </Text>
             <View className={`self-start px-3 py-1 rounded-full ${
-              baby.role === 'admin' ? 'bg-blue-900' : 'bg-gray-700'
+              baby.role === 'admin' ? 'bg-primary/20' : 'bg-gray-700'
             }`}>
               <Text className={`text-sm font-medium ${
-                baby.role === 'admin' ? 'text-blue-300' : 'text-gray-300'
+                baby.role === 'admin' ? 'text-white' : 'text-gray-300'
               }`} style={{ fontFamily: 'Inter' }}>
                 {baby.role === 'admin' ? 'Admin' : 'Guest'}
               </Text>

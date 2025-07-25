@@ -134,7 +134,7 @@ export default function CreateBabyModal({ visible, onClose, onBabyCreated }: Cre
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="flex-1 py-4 rounded-xl items-center bg-blue-600"
+              className="flex-1 py-4 rounded-xl items-center bg-primary"
               onPress={handleSave}
               disabled={loading || !babyName.trim()}
             >

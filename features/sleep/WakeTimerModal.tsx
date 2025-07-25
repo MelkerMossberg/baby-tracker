@@ -135,7 +135,7 @@ export default function WakeTimerModal({
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="flex-1 py-4 rounded-xl items-center bg-blue-600"
+              className="flex-1 py-4 rounded-xl items-center bg-primary"
               onPress={handleSave}
             >
               <Text className="text-text-main text-lg" style={{ fontFamily: 'Inter' }}>Set Timer</Text>

@@ -210,7 +210,7 @@ export default function EditBabyScreen({ baby, onSave, onCancel }: EditBabyScree
             className={`rounded-xl py-4 items-center ${
               loading || !hasChanges() 
                 ? 'bg-gray-700' 
-                : 'bg-blue-600'
+                : 'bg-primary'
             }`}
             onPress={handleSave}
             disabled={loading || !hasChanges()}

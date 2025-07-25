@@ -163,7 +163,7 @@ export default function AllEventsModal({ visible, onClose, babyId }: AllEventsMo
             All Events
           </Text>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-            <Text className="text-blue-400 text-lg" style={{ fontFamily: 'Inter' }}>
+            <Text className="text-primary text-lg" style={{ fontFamily: 'Inter' }}>
               Done
             </Text>
           </TouchableOpacity>

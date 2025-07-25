@@ -55,7 +55,7 @@ export default function ActiveSleepCard({
           <Text className="text-text-main text-lg font-serif" style={{ fontFamily: 'DM Serif Display' }}>
             {isWakeTimeReached() ? `Timer to wake ${babyName || 'baby'} up` : 'Sleep in Progress'}
           </Text>
-          <Text className="text-blue-300 text-2xl font-bold mt-1" style={{ fontFamily: 'Inter' }}>
+          <Text className="text-white text-2xl font-bold mt-1" style={{ fontFamily: 'Inter' }}>
             Sleeping: {elapsedTime}
           </Text>
           {wakeTimerSetFor && (
@@ -85,7 +85,7 @@ export default function ActiveSleepCard({
         
         {!wakeTimerSetFor ? (
           <TouchableOpacity
-            className="py-2 px-3 rounded-lg items-center bg-blue-600"
+            className="py-2 px-3 rounded-lg items-center bg-primary"
             onPress={onSetWakeTimer}
           >
             <Text className="text-text-main text-sm" style={{ fontFamily: 'Inter' }}>
