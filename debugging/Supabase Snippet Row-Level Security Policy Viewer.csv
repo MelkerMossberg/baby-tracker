@@ -1,0 +1,31 @@
+table_schema,table_name,policyname,permissive,roles,command,using_expression,with_check
+public,baby_profiles,baby_profiles_can_create,PERMISSIVE,{public},INSERT,null,(created_by = auth.uid())
+public,baby_profiles,baby_profiles_can_update,PERMISSIVE,{public},UPDATE,"((created_by = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = baby_profiles.id) AND (user_baby_links.user_id = auth.uid()) AND (user_baby_links.role = 'admin'::text)))))",null
+public,baby_profiles,baby_profiles_can_view,PERMISSIVE,{public},SELECT,"((created_by = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = baby_profiles.id) AND (user_baby_links.user_id = auth.uid())))))",null
+public,events,events_can_create,PERMISSIVE,{public},INSERT,null,"((created_by = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = events.baby_id) AND (user_baby_links.user_id = auth.uid())))))"
+public,events,events_can_delete,PERMISSIVE,{public},DELETE,(created_by = auth.uid()),null
+public,events,events_can_update,PERMISSIVE,{public},UPDATE,(created_by = auth.uid()),null
+public,events,events_can_view,PERMISSIVE,{public},SELECT,"((created_by = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = events.baby_id) AND (user_baby_links.user_id = auth.uid())))))",null
+public,invite_codes,invite_codes_can_create,PERMISSIVE,{public},INSERT,null,"((created_by = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = invite_codes.baby_id) AND (user_baby_links.user_id = auth.uid()) AND (user_baby_links.role = 'admin'::text)))))"
+public,invite_codes,invite_codes_can_view,PERMISSIVE,{public},SELECT,"((created_by = auth.uid()) OR (used_by = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM user_baby_links
+  WHERE ((user_baby_links.baby_id = invite_codes.baby_id) AND (user_baby_links.user_id = auth.uid()) AND (user_baby_links.role = 'admin'::text)))))",null
+public,user_baby_links,user_baby_links_can_create,PERMISSIVE,{public},INSERT,null,"((user_id = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM baby_profiles
+  WHERE ((baby_profiles.id = user_baby_links.baby_id) AND (baby_profiles.created_by = auth.uid())))))"
+public,user_baby_links,user_baby_links_can_delete,PERMISSIVE,{public},DELETE,"((user_id = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM baby_profiles
+  WHERE ((baby_profiles.id = user_baby_links.baby_id) AND (baby_profiles.created_by = auth.uid())))))",null
+public,user_baby_links,user_baby_links_can_view,PERMISSIVE,{public},SELECT,(user_id = auth.uid()),null
+public,users,users_can_update_own,PERMISSIVE,{public},UPDATE,(auth.uid() = id),null
+public,users,users_can_view_own,PERMISSIVE,{public},SELECT,(auth.uid() = id),null

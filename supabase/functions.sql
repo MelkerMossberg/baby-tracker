@@ -115,9 +115,9 @@ BEGIN
   INSERT INTO invite_codes (code, baby_id, created_by, role, expires_at)
   VALUES (
     invite_code, 
-    baby_id, 
+    create_invite_code.baby_id, 
     current_user_id, 
-    role, 
+    create_invite_code.role, 
     NOW() + (expires_in_days || ' days')::INTERVAL
   );
 

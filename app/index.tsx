@@ -19,6 +19,7 @@ import WakeTimerModal from '../features/sleep/WakeTimerModal';
 import AllEventsModal from '../components/AllEventsModal';
 import CreateBabyModal from '../components/CreateBabyModal';
 import BabySwitcher from '../components/BabySwitcher';
+import SettingsModal from '../components/SettingsModal';
 import { useActiveBaby } from '../hooks/useActiveBaby';
 import { useAuth } from '../hooks/useAuth';
 
@@ -30,7 +31,8 @@ export default function HomeScreen() {
     babyList, 
     loading: babyLoading, 
     error: babyError,
-    refreshBabies 
+    refreshBabies,
+    setActiveBabyId
   } = useActiveBaby();
 
   // Use the auth hook
@@ -73,6 +75,7 @@ export default function HomeScreen() {
   const [showBreastSelectionModal, setShowBreastSelectionModal] = useState(false);
   const [showAllEventsModal, setShowAllEventsModal] = useState(false);
   const [showCreateBabyModal, setShowCreateBabyModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [currentEventType, setCurrentEventType] = useState<EventType>('diaper');
   const [currentEventTitle, setCurrentEventTitle] = useState('');
   const [currentNursingSide, setCurrentNursingSide] = useState<NursingSide>('left');
@@ -742,26 +745,7 @@ export default function HomeScreen() {
         </View>
         <TouchableOpacity 
           className="w-10 h-10 bg-card-main rounded-full items-center justify-center"
-          onPress={() => {
-            Alert.alert(
-              'Sign Out',
-              `Sign out of ${user?.name || 'your account'}?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Sign Out', 
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      await signOut();
-                    } catch (error) {
-                      Alert.alert('Error', 'Failed to sign out. Please try again.');
-                    }
-                  }
-                }
-              ]
-            );
-          }}
+          onPress={() => setShowSettingsModal(true)}
           activeOpacity={0.7}
         >
           <Image 
@@ -1104,6 +1088,19 @@ export default function HomeScreen() {
         }}
       />
       </ScrollView>
+      
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onBabyUpdated={refreshBabies}
+        onCreateBaby={() => setShowCreateBabyModal(true)}
+        onBabyJoined={async (babyId) => {
+          // Refresh babies and switch to the newly joined baby
+          await refreshBabies();
+          setActiveBabyId(babyId);
+        }}
+      />
       
       <Toast />
     </View>
