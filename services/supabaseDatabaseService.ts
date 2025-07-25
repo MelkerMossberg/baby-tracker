@@ -165,7 +165,7 @@ class SupabaseDatabaseService {
   /**
    * Create an event
    */
-  async createEvent(event: Event): Promise<void> {
+  async createEvent(event: Event): Promise<Event> {
     this.checkInitialized();
 
     try {
@@ -173,7 +173,8 @@ class SupabaseDatabaseService {
         throw new Error('Baby ID is required for event');
       }
 
-      await createEventLocal(event.babyId, event);
+      const createdEvent = await createEventLocal(event.babyId, event);
+      return createdEvent;
     } catch (error) {
       console.error('Error creating event:', error);
       throw error;

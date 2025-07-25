@@ -139,7 +139,9 @@ export async function createEventLocal(
       throw new Error(`Failed to create event: ${error.message}`)
     }
 
-    return convertToLocalEvent(data)
+    const localEvent = convertToLocalEvent(data)
+    console.log('✅ Created event with Supabase ID:', localEvent.id, 'for original ID:', eventData.id)
+    return localEvent
   } catch (error) {
     console.error('Error creating event:', error)
     throw error
@@ -243,36 +245,41 @@ export async function getEventsForBaby(
       throw new Error('Baby ID is required')
     }
 
-    // Verify user has access to this baby by checking user_baby_links
-    const { data: accessCheck, error: accessError } = await supabase
-      .from('user_baby_links')
-      .select('baby_id')
-      .eq('baby_id', babyId)
-      .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-      .single()
-
-    if (accessError || !accessCheck) {
-      throw new Error('Access denied: You do not have permission to view events for this baby')
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      throw new Error('User must be authenticated')
     }
 
-    // Build the query
-    let query = supabase
-      .from('events')
-      .select('*')
-      .eq('baby_id', babyId)
-      .order('timestamp', { ascending: false })
-
-    // Add event type filter if provided
+    // Use RPC function to get events (bypasses RLS issues)
+    let data: any[]
+    let error: any
+    
     if (eventType) {
       // Validate event type
       const validEventTypes: EventType[] = ['nursing', 'sleep', 'diaper', 'pumping', 'bottle', 'solids']
       if (!validEventTypes.includes(eventType)) {
         throw new Error(`Invalid event type: ${eventType}. Must be one of: ${validEventTypes.join(', ')}`)
       }
-      query = query.eq('type', eventType)
+      
+      // Use event type specific RPC function
+      const result = await supabase.rpc('get_baby_events_by_type', {
+        p_user_id: user.id,
+        p_baby_id: babyId,
+        p_event_type: eventType
+      })
+      data = result.data
+      error = result.error
+    } else {
+      // Get all events for baby
+      const result = await supabase.rpc('get_baby_events', {
+        p_user_id: user.id,
+        p_baby_id: babyId
+      })
+      data = result.data
+      error = result.error
     }
-
-    const { data, error } = await query
 
     if (error) {
       throw new Error(`Failed to fetch events: ${error.message}`)
@@ -282,8 +289,19 @@ export async function getEventsForBaby(
       return []
     }
 
-    // Convert all events to local format
-    return data.map(convertToLocalEvent)
+    // Convert RPC results to events format and then to local format
+    const events = data.map(row => ({
+      id: row.event_id,
+      baby_id: row.baby_id,
+      created_by: row.created_by,
+      type: row.event_type,
+      timestamp: row.event_timestamp,
+      duration: row.duration,
+      notes: row.notes,
+      metadata: row.metadata
+    }))
+    
+    return events.map(convertToLocalEvent)
 
   } catch (error) {
     console.error('Error fetching events for baby:', error)
@@ -326,54 +344,19 @@ export async function getTodaysEventsForBaby(
       throw new Error('Baby ID is required')
     }
 
-    // Verify user has access to this baby
-    const { data: accessCheck, error: accessError } = await supabase
-      .from('user_baby_links')
-      .select('baby_id')
-      .eq('baby_id', babyId)
-      .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-      .single()
-
-    if (accessError || !accessCheck) {
-      throw new Error('Access denied: You do not have permission to view events for this baby')
-    }
-
-    // Calculate today's date range
+    // Get all events first using our safe RPC function
+    const allEvents = await getEventsForBaby(babyId, eventType)
+    
+    // Filter to today's events
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-
-    // Build the query with date range
-    let query = supabase
-      .from('events')
-      .select('*')
-      .eq('baby_id', babyId)
-      .gte('timestamp', today.toISOString())
-      .lt('timestamp', tomorrow.toISOString())
-      .order('timestamp', { ascending: false })
-
-    // Add event type filter if provided
-    if (eventType) {
-      const validEventTypes: EventType[] = ['nursing', 'sleep', 'diaper', 'pumping', 'bottle', 'solids']
-      if (!validEventTypes.includes(eventType)) {
-        throw new Error(`Invalid event type: ${eventType}. Must be one of: ${validEventTypes.join(', ')}`)
-      }
-      query = query.eq('type', eventType)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      throw new Error(`Failed to fetch today's events: ${error.message}`)
-    }
-
-    if (!data) {
-      return []
-    }
-
-    // Convert all events to local format
-    return data.map(convertToLocalEvent)
+    
+    return allEvents.filter(event => {
+      const eventTime = new Date(event.timestamp)
+      return eventTime >= today && eventTime < tomorrow
+    })
 
   } catch (error) {
     console.error('Error fetching today\'s events for baby:', error)
@@ -441,19 +424,46 @@ export async function getEventsByType(
   eventType: EventType,
   limit: number = 50
 ): Promise<Event[]> {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('baby_id', babyId)
-    .eq('type', eventType)
-    .order('timestamp', { ascending: false })
-    .limit(limit)
+  try {
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      throw new Error('User must be authenticated')
+    }
 
-  if (error) {
-    throw new Error(`Failed to fetch ${eventType} events: ${error.message}`)
+    // Use RPC function to get events by type (bypasses RLS issues)
+    const { data, error } = await supabase.rpc('get_baby_events_by_type', {
+      p_user_id: user.id,
+      p_baby_id: babyId,
+      p_event_type: eventType
+    })
+
+    if (error) {
+      throw new Error(`Failed to fetch ${eventType} events: ${error.message}`)
+    }
+
+    if (!data) {
+      return []
+    }
+
+    // Convert RPC results to events format and apply limit
+    const events = data.slice(0, limit).map(row => ({
+      id: row.event_id,
+      baby_id: row.baby_id,
+      created_by: row.created_by,
+      type: row.event_type,
+      timestamp: row.event_timestamp,
+      duration: row.duration,
+      notes: row.notes,
+      metadata: row.metadata
+    }))
+    
+    return events
+  } catch (error) {
+    console.error(`Error fetching ${eventType} events:`, error)
+    throw error
   }
-
-  return data
 }
 
 /**

@@ -21,10 +21,7 @@ export default function AuthenticatedApp() {
   if (authStatus === 'loading') {
     return (
       <StyledSafeAreaView className="flex-1 items-center justify-center bg-bg-main dark:bg-white">
-        <StyledText 
-          className="text-text-main dark:text-black text-lg" 
-          style={{ fontFamily: 'Inter' }}
-        >
+        <StyledText className="text-text-main dark:text-black text-lg">
           Loading...
         </StyledText>
       </StyledSafeAreaView>

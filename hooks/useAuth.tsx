@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { signIn as apiSignIn, signUp as apiSignUp, signOut as apiSignOut, getCurrentUser, onAuthStateChange } from '../lib/api/auth';
+import { supabase } from '../lib/supabase';
 import type { User } from '../lib/supabase';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -63,9 +64,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth state
     const initializeAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        setAuthStatus(currentUser ? 'authenticated' : 'unauthenticated');
+        // First check if we have a session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setUser(null);
+          setAuthStatus('unauthenticated');
+          return;
+        }
+
+        if (session?.user) {
+          try {
+            const currentUser = await getCurrentUser();
+            setUser(currentUser);
+            setAuthStatus(currentUser ? 'authenticated' : 'unauthenticated');
+          } catch (userError) {
+            console.error('Error getting user profile:', userError);
+            // Even if user profile fails, we have a session
+            setUser(null);
+            setAuthStatus('unauthenticated');
+          }
+        } else {
+          setUser(null);
+          setAuthStatus('unauthenticated');
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
         setUser(null);

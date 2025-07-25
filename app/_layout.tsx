@@ -21,43 +21,26 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      const results = await Promise.allSettled([
-        // Font loading is handled by useFonts hook
-        new Promise<void>((resolve) => {
-          if (fontsLoaded) {
-            resolve();
-          } else {
-            // Wait for fonts to load
-            const checkFonts = () => {
-              if (fontsLoaded) {
-                resolve();
-              } else {
-                setTimeout(checkFonts, 50);
-              }
-            };
-            checkFonts();
-          }
-        }),
+      try {
         // Database initialization
-        initializeDummyData().catch(error => {
-          console.warn('Database initialization failed:', error);
-        })
-      ]);
-
-      setDbInitialized(true);
-      setAppReady(fontsLoaded);
+        await initializeDummyData();
+        setDbInitialized(true);
+      } catch (error) {
+        console.warn('Database initialization failed:', error);
+        setDbInitialized(true); // Continue even if DB init fails
+      }
     };
 
-    initializeApp();
+    if (fontsLoaded) {
+      initializeApp();
+      setAppReady(true);
+    }
   }, [fontsLoaded]);
 
   if (!appReady) {
     return (
       <StyledSafeAreaView className="flex-1 items-center justify-center bg-bg-main dark:bg-white">
-        <StyledText 
-          className="text-text-main dark:text-black text-lg" 
-          style={{ fontFamily: 'Inter' }}
-        >
+        <StyledText className="text-text-main dark:text-black text-lg">
           Loading...
         </StyledText>
       </StyledSafeAreaView>

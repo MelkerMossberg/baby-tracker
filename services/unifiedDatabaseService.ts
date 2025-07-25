@@ -51,7 +51,7 @@ class UnifiedDatabaseService {
     return this.currentService.getUser(id);
   }
 
-  async createEvent(event: Event): Promise<void> {
+  async createEvent(event: Event): Promise<Event> {
     return this.currentService.createEvent(event);
   }
 

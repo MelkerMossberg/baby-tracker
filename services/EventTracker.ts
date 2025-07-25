@@ -61,14 +61,14 @@ class EventTracker {
       babyId: this.activeNursingSession.babyId
     };
 
-    await unifiedDatabaseService.createEvent(event);
+    const createdEvent = await unifiedDatabaseService.createEvent(event);
 
-    // Store as last created event for potential duration updates
-    this.lastCreatedEvent = event;
+    // Store as last created event for potential duration updates - use the actual Supabase ID
+    this.lastCreatedEvent = createdEvent;
 
     this.activeNursingSession = null;
 
-    return event;
+    return createdEvent;
   }
 
   getActiveNursingSession(): ActiveNursingSession | null {
@@ -131,14 +131,14 @@ class EventTracker {
       babyId: this.activeSleepSession.babyId
     };
 
-    await unifiedDatabaseService.createEvent(event);
+    const createdEvent = await unifiedDatabaseService.createEvent(event);
 
-    // Store as last created event for potential updates
-    this.lastCreatedEvent = event;
+    // Store as last created event for potential updates - use the actual Supabase ID
+    this.lastCreatedEvent = createdEvent;
 
     this.activeSleepSession = null;
 
-    return event;
+    return createdEvent;
   }
 
   getSleepSession(): ActiveSleepSession | null {
@@ -248,9 +248,9 @@ class EventTracker {
       babyId
     };
 
-    await unifiedDatabaseService.createEvent(event);
+    const createdEvent = await unifiedDatabaseService.createEvent(event);
 
-    return event;
+    return createdEvent;
   }
 
   async addSleepEvent(babyId: string, startTime: Date, endTime: Date, notes?: string): Promise<Event> {
@@ -301,9 +301,9 @@ class EventTracker {
       babyId
     };
 
-    await unifiedDatabaseService.createEvent(event);
+    const createdEvent = await unifiedDatabaseService.createEvent(event);
 
-    return event;
+    return createdEvent;
   }
 
   async addBottleFeeding(babyId: string, timestamp?: Date, notes?: string): Promise<Event> {

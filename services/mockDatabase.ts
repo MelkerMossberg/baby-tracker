@@ -53,7 +53,7 @@ export class MockDatabaseService {
     return user || null;
   }
 
-  async createEvent(event: Event): Promise<void> {
+  async createEvent(event: Event): Promise<Event> {
     if (!this.isInitialized) throw new Error('Mock database not initialized');
     
     const existingIndex = mockEvents.findIndex(e => e.id === event.id);
@@ -62,6 +62,8 @@ export class MockDatabaseService {
     } else {
       mockEvents.push(event);
     }
+    
+    return event;
   }
 
   async getEventsForBaby(babyId: string, limit?: number): Promise<Event[]> {

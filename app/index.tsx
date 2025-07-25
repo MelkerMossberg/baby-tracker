@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, Alert, Dimensions } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { eventTracker, initializeDummyData } from '../services';
 import { notificationService } from '../services/notificationService';
@@ -728,10 +728,17 @@ export default function HomeScreen() {
           <Text className="text-xl font-serif text-text-main" style={{ fontFamily: 'DM Serif Display' }}>
             Baby Tracker
           </Text>
-          <BabySwitcher 
-            showCreateButton={true}
-            onCreateBaby={() => setShowCreateBabyModal(true)}
-          />
+          {/* Show baby switcher or "No baby added yet" message */}
+          {!activeBaby && babyList.length === 0 ? (
+            <Text className="text-text-muted text-sm" style={{ fontFamily: 'Inter' }}>
+              No baby added yet
+            </Text>
+          ) : (
+            <BabySwitcher 
+              showCreateButton={true}
+              onCreateBaby={() => setShowCreateBabyModal(true)}
+            />
+          )}
         </View>
         <TouchableOpacity 
           className="w-10 h-10 bg-card-main rounded-full items-center justify-center"
@@ -790,26 +797,65 @@ export default function HomeScreen() {
       )}
 
 
-      {/* Hero Message */}
+      {/* Hero Message or Onboarding Card */}
       {!isSleepInProgress && !isNursingInProgress && (
         <View className="mb-8">
-          <Text className="text-3xl font-serif text-text-main mb-4 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
-            {activeBaby ? `Soon time for ${activeBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
-          </Text>
-          
-          {/* Show create baby button if no babies exist */}
-          {!activeBaby && babyList.length === 0 && (
+          {/* Show onboarding card if no babies exist */}
+          {!activeBaby && babyList.length === 0 ? (
             <TouchableOpacity
-              className="bg-blue-600 px-6 py-4 rounded-xl items-center"
+              className="relative rounded-3xl overflow-hidden shadow-lg"
+              style={{ height: Dimensions.get('window').height * 0.64 }}
               onPress={() => setShowCreateBabyModal(true)}
+              activeOpacity={0.95}
             >
-              <Text className="text-white text-lg font-semibold" style={{ fontFamily: 'Inter' }}>
-                Add Your First Baby
-              </Text>
-              <Text className="text-blue-100 text-sm mt-1" style={{ fontFamily: 'Inter' }}>
-                Start tracking your baby's activities
-              </Text>
+              {/* Background Image - covers entire card */}
+              <Image 
+                source={require('../assets/img/banners/AddYourbaby.png')} 
+                className="absolute inset-0 w-full h-full"
+                resizeMode="cover"
+              />
+              
+              {/* Subtle overlay for text contrast */}
+              <View className="absolute inset-0 bg-black/10 rounded-3xl" />
+              
+              {/* Top Row - Get Started Header */}
+              <View className="absolute top-6 left-6 right-6 flex-row justify-between items-center">
+                <Text 
+                  className="text-white text-xl font-medium" 
+                  style={{ fontFamily: 'DM Serif Display' }}
+                >
+                  Get started
+                </Text>
+                <Text className="text-white text-2xl font-light">→</Text>
+              </View>
+              
+              {/* Bottom Section - Title and Subtitle (Center aligned) */}
+              <View className="absolute bottom-6 left-6 right-6 items-center">
+                <Text 
+                  className="text-white text-3xl font-medium mb-2 text-center" 
+                  style={{ 
+                    fontFamily: 'DM Serif Display',
+                    lineHeight: 36
+                  }}
+                >
+                  Add your baby
+                </Text>
+                <Text 
+                  className="text-white/90 text-base font-normal text-center" 
+                  style={{ 
+                    fontFamily: 'Inter',
+                    lineHeight: 20
+                  }}
+                >
+                  Start tracking your baby's activities
+                </Text>
+              </View>
             </TouchableOpacity>
+          ) : (
+            /* Regular hero message when baby exists */
+            <Text className="text-3xl font-serif text-text-main mb-4 leading-tight" style={{ fontFamily: 'DM Serif Display' }}>
+              {activeBaby ? `Soon time for ${activeBaby.name}'s second meal. Yum.` : 'Welcome to Baby Tracker'}
+            </Text>
           )}
         </View>
       )}

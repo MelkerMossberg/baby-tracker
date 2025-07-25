@@ -266,6 +266,72 @@ export interface Database {
         }
         Returns: Json
       }
+      get_user_babies: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          id: string
+          name: string
+          birthdate: string
+          created_by: string
+          created_at: string
+          updated_at: string
+          role: string
+        }[]
+      }
+      get_user_baby_by_id: {
+        Args: {
+          user_id: string
+          baby_id: string
+        }
+        Returns: {
+          id: string
+          name: string
+          birthdate: string
+          created_by: string
+          created_at: string
+          updated_at: string
+          role: string
+        }[]
+      }
+      get_baby_events: {
+        Args: {
+          p_user_id: string
+          p_baby_id: string
+        }
+        Returns: {
+          event_id: string
+          baby_id: string
+          created_by: string
+          event_type: string
+          event_timestamp: string
+          duration: number
+          notes: string
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }[]
+      }
+      get_baby_events_by_type: {
+        Args: {
+          p_user_id: string
+          p_baby_id: string
+          p_event_type: string
+        }
+        Returns: {
+          event_id: string
+          baby_id: string
+          created_by: string
+          event_type: string
+          event_timestamp: string
+          duration: number
+          notes: string
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

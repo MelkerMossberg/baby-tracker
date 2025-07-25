@@ -23,8 +23,8 @@ lib/
 Ensure your `.env` file has the correct Supabase variables:
 
 ```bash
-REACT_SUPABASE_URL=your-supabase-project-url
-REACT_SUPABASE_ANON_KEY=your-supabase-anon-key
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-project-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
 ### 2. Basic Usage

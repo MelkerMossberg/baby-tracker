@@ -17,24 +17,29 @@ export async function getBabiesForCurrentUser(): Promise<BabyWithRole[]> {
       throw new Error('User must be authenticated to fetch babies')
     }
 
-    // Fetch babies with user's role through the user_baby_links table
-    const { data, error } = await supabase
-      .from('baby_profiles')
-      .select(`
-        *,
-        user_baby_links!inner(role)
-      `)
-      .eq('user_baby_links.user_id', user.id)
-      .order('created_at', { ascending: false })
+    console.log('🔄 Fetching babies using RPC function...');
+    
+    // Use RPC function to get babies (bypasses RLS issues)
+    const { data: babies, error } = await supabase.rpc('get_user_babies', {
+      user_id: user.id
+    })
 
     if (error) {
+      console.error('❌ RPC get_user_babies error:', error);
       throw new Error(`Failed to fetch babies: ${error.message}`)
     }
 
-    // Transform the data to include role at the top level
-    return data.map(baby => ({
-      ...baby,
-      role: baby.user_baby_links[0].role
+    console.log('✅ Successfully fetched babies:', babies?.length || 0, babies);
+    
+    // Transform to match expected interface
+    return (babies || []).map(baby => ({
+      id: baby.id,
+      name: baby.name,
+      birthdate: baby.birthdate,
+      created_by: baby.created_by,
+      created_at: baby.created_at,
+      updated_at: baby.updated_at,
+      role: baby.role as 'admin' | 'guest'
     })) as BabyWithRole[]
 
   } catch (error) {
@@ -78,19 +83,23 @@ export async function createBabyProfile(
     }
 
     // Use the database function to create baby profile and admin link
+    console.log('🔄 Creating baby profile with RPC function:', { baby_name: name.trim(), baby_birthdate: birthdate });
     const { data: babyId, error } = await supabase.rpc('create_baby_profile', {
       baby_name: name.trim(),
       baby_birthdate: birthdate
     })
 
     if (error) {
+      console.error('❌ RPC create_baby_profile error:', error);
       throw new Error(`Failed to create baby profile: ${error.message}`)
     }
 
     if (!babyId) {
+      console.error('❌ No baby ID returned from RPC function');
       throw new Error('Failed to create baby profile: No baby ID returned')
     }
 
+    console.log('✅ Baby profile created successfully with ID:', babyId);
     return babyId as string
 
   } catch (error) {
@@ -119,31 +128,41 @@ export async function getBabyById(babyId: string): Promise<BabyWithRole | null> 
       throw new Error('User must be authenticated')
     }
 
-    const { data, error } = await supabase
-      .from('baby_profiles')
-      .select(`
-        *,
-        user_baby_links!inner(role)
-      `)
-      .eq('id', babyId)
-      .eq('user_baby_links.user_id', user.id)
-      .single()
+    console.log('🔄 Fetching baby by ID using RPC function...');
+    
+    // Use RPC function to get baby by ID (bypasses RLS issues)
+    const { data: babies, error } = await supabase.rpc('get_user_baby_by_id', {
+      user_id: user.id,
+      baby_id: babyId
+    })
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null // No access or baby doesn't exist
-      }
+      console.error('❌ RPC get_user_baby_by_id error:', error);
       throw new Error(`Failed to fetch baby: ${error.message}`)
     }
 
+    if (!babies || babies.length === 0) {
+      console.log('❌ Baby not found or no access');
+      return null;
+    }
+
+    const baby = babies[0];
+    console.log('✅ Successfully fetched baby by ID:', baby);
+    
+    // Transform to match expected interface
     return {
-      ...data,
-      role: data.user_baby_links[0].role
+      id: baby.id,
+      name: baby.name,
+      birthdate: baby.birthdate,
+      created_by: baby.created_by,
+      created_at: baby.created_at,
+      updated_at: baby.updated_at,
+      role: baby.role as 'admin' | 'guest'
     } as BabyWithRole
 
   } catch (error) {
     console.error('Error fetching baby by ID:', error)
-    throw error
+    return null
   }
 }
 
