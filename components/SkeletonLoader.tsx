@@ -46,12 +46,14 @@ export default function SkeletonLoader({
   return (
     <Animated.View
       className={className}
-      style={{
-        width,
-        height,
-        borderRadius,
-        backgroundColor,
-      }}
+      style={[
+        {
+          width: width as any,
+          height,
+          borderRadius,
+          backgroundColor,
+        }
+      ]}
     />
   );
 }

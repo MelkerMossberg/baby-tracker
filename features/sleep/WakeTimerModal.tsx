@@ -109,7 +109,6 @@ export default function WakeTimerModal({
                   display="compact"
                   onChange={onChange}
                   themeVariant="dark"
-                  is24Hour={true}
                   locale="en_GB"
                 />
               </View>

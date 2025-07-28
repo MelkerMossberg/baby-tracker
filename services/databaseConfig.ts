@@ -3,5 +3,5 @@ export const USE_SUPABASE = true; // Set to true to use Supabase, false for mock
 
 export const DATABASE_CONFIG = {
   useSupabase: USE_SUPABASE,
-  mockFallback: true, // Fall back to mock if Supabase fails
+  mockFallback: false, // No fallback - only use Supabase
 };

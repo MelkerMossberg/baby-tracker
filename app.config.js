@@ -3,7 +3,8 @@ export default {
   slug: "baby-tracker",
   version: "1.0.0",
   orientation: "portrait",
-  //icon: "./assets/icon.png", // adjust if you don’t have one yet
+  sdkVersion: "53.0.0",
+  //icon: "./assets/icon.png", // adjust if you don't have one yet
   scheme: "babytracker",
   userInterfaceStyle: "automatic",
   splash: {
@@ -16,9 +17,14 @@ export default {
   },
   assetBundlePatterns: ["**/*"],
   ios: {
-    supportsTablet: true
+    supportsTablet: true,
+    bundleIdentifier: "com.melkermossberg.babytracker",
+    infoPlist: {
+      NSSupportsLiveActivities: true
+    }
   },
   android: {
+    package: "com.melkermossberg.babytracker",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff"
@@ -26,5 +32,8 @@ export default {
   },
   web: {
     favicon: "./assets/favicon.png"
-  }
+  },
+  plugins: [
+    "./plugins/withLiveActivities.js"
+  ]
 };

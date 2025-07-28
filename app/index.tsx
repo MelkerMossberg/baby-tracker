@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, ScrollView, Alert, Dimensions } fr
 import Toast from 'react-native-toast-message';
 import { eventTracker, initializeDummyData } from '../services';
 import { notificationService } from '../services/notificationService';
+import { liveActivityService } from '../services/liveActivityService';
 import { Event, EventType, NursingSide, BabyProfile } from '../types';
 import { formatDuration } from '../utils/time';
 import { getEventDisplayName } from '../utils/events';
@@ -287,10 +288,14 @@ export default function HomeScreen() {
       setIsNursingInProgress(true);
       setCurrentNursingSide(side);
       setElapsedTime('0m');
+      
+      // Start Live Activity
+      const liveActivityStarted = await liveActivityService.startNursingActivity(side, activeBaby.name);
+      
       Toast.show({
         type: 'success',
         text1: 'Nursing Started',
-        text2: `Timer is now running (${side})`
+        text2: `Timer is now running (${side})${liveActivityStarted ? ' • Live Activity active' : ''}`
       });
     } catch (error) {
       console.error('Error starting nursing session:', error);
@@ -300,6 +305,9 @@ export default function HomeScreen() {
 
   const handleNursingSave = async (side: NursingSide, notes: string, durationSeconds: number) => {
     try {
+      // Stop Live Activity first
+      await liveActivityService.stopNursingActivity();
+      
       // Get the last created event (nursing session was already stopped when "Stop" was pressed)
       const event = eventTracker.getLastCreatedEvent();
       
@@ -516,10 +524,14 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSwitchNursingSide = (newSide: NursingSide) => {
+  const handleSwitchNursingSide = async (newSide: NursingSide) => {
     try {
       eventTracker.switchNursingSide(newSide);
       setCurrentNursingSide(newSide);
+      
+      // Update Live Activity with new side
+      await liveActivityService.updateNursingSide(newSide);
+      
       Toast.show({
         type: 'success',
         text1: 'Side Switched',
@@ -545,6 +557,7 @@ export default function HomeScreen() {
       try {
         await eventTracker.stopNursingSession();
         setIsNursingInProgress(false);
+        // Note: Live Activity will be stopped when user saves or cancels in the modal
       } catch (error) {
         console.error('Error stopping nursing session:', error);
       }
@@ -747,7 +760,7 @@ export default function HomeScreen() {
           )}
         </View>
         <TouchableOpacity 
-          className="w-10 h-10 rounded-full items-center justify-center"
+          className="w-12 h-12 rounded-full items-center justify-center"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
           onPress={() => setShowSettingsModal(true)}
           activeOpacity={0.7}
@@ -1042,7 +1055,11 @@ export default function HomeScreen() {
       
       <NursingModal
         visible={showNursingModal}
-        onClose={() => setShowNursingModal(false)}
+        onClose={() => {
+          // Stop Live Activity if user cancels
+          liveActivityService.stopNursingActivity();
+          setShowNursingModal(false);
+        }}
         onSave={handleNursingSave}
         currentSide={currentNursingSide}
         elapsedTime={elapsedTime}

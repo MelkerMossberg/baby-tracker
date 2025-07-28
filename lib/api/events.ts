@@ -452,11 +452,13 @@ export async function getEventsByType(
       id: row.event_id,
       baby_id: row.baby_id,
       created_by: row.created_by,
-      type: row.event_type,
+      type: row.event_type as "nursing" | "sleep" | "diaper" | "pumping" | "bottle" | "solids",
       timestamp: row.event_timestamp,
       duration: row.duration,
       notes: row.notes,
-      metadata: row.metadata
+      metadata: row.metadata,
+      created_at: row.event_timestamp,
+      updated_at: row.event_timestamp
     }))
     
     return events
