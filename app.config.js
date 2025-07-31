@@ -4,7 +4,7 @@ export default {
   version: "1.0.0",
   orientation: "portrait",
   sdkVersion: "53.0.0",
-  //icon: "./assets/icon.png", // adjust if you don't have one yet
+  icon: "./assets/adaptive-icon.png",
   scheme: "babytracker",
   userInterfaceStyle: "automatic",
   splash: {
@@ -20,7 +20,8 @@ export default {
     supportsTablet: true,
     bundleIdentifier: "com.melkermossberg.babytracker",
     infoPlist: {
-      NSSupportsLiveActivities: true
+      NSSupportsLiveActivities: true,
+      ITSAppUsesNonExemptEncryption: false
     }
   },
   android: {
@@ -33,7 +34,12 @@ export default {
   web: {
     favicon: "./assets/favicon.png"
   },
+  extra: {
+      "eas": {
+        "projectId": "04356d21-4584-4652-a27e-1955c7d8cb9f"
+      }
+  },
   plugins: [
-    "./plugins/withLiveActivities.js"
+    // "./plugins/withLiveActivities.js" // Temporarily disabled for build
   ]
 };

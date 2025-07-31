@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js b/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
+index 1234567..abcdefg 100644
+--- a/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
++++ b/node_modules/react-native/Libraries/Components/ScrollView/ScrollView.js
+@@ -45,7 +45,7 @@ const AndroidHorizontalScrollContentViewNativeComponent =
+ const AndroidHorizontalScrollViewNativeComponent =
+   require('../../../src/private/components/HScrollViewNativeComponents')
+     .default;
+-    
++
+ const RCTScrollViewViewConfig = {
+   uiViewClassName: 'RCTScrollView',
+   bubblingEventTypes: {},
