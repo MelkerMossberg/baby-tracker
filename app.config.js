@@ -39,7 +39,5 @@ export default {
         "projectId": "04356d21-4584-4652-a27e-1955c7d8cb9f"
       }
   },
-  plugins: [
-    // "./plugins/withLiveActivities.js" // Temporarily disabled for build
-  ]
+  plugins: []
 };

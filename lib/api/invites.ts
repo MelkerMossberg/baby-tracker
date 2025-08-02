@@ -151,6 +151,6 @@ export async function deleteInviteCode(codeId: string): Promise<void> {
  * Generate a shareable invite link
  */
 export function generateInviteLink(code: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'http://localhost:3000'
   return `${baseUrl}/invite/${code}`
 }
