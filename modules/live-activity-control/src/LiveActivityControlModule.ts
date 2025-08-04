@@ -21,6 +21,26 @@ export default NativeModulesProxy.LiveActivityControl ?? {
       message: 'Live Activities not supported on this platform'
     };
   },
+  async pauseActivity(_activityId?: string) {
+    return {
+      success: false,
+      message: 'Live Activities not supported on this platform',
+      elapsedTime: 0
+    };
+  },
+  async resumeActivity(_activityId?: string) {
+    return {
+      success: false,
+      message: 'Live Activities not supported on this platform'
+    };
+  },
+  async completeActivity(_activityId?: string) {
+    return {
+      success: false,
+      message: 'Live Activities not supported on this platform',
+      elapsedTime: 0
+    };
+  },
   async areActivitiesEnabled() {
     return false;
   }
