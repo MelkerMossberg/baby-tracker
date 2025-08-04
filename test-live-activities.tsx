@@ -67,24 +67,24 @@ export const LiveActivityTest: React.FC = () => {
       // Test module availability step by step
       try {
         console.log('🧪 Step 1: Testing module import...');
-        const moduleImport = require('../modules/expo-live-activity-manager/src');
+        const moduleImport = require('live-activity-control');
         console.log('🧪 Module import result:', !!moduleImport);
-        
+
         basicResults.moduleAvailable = !!moduleImport;
-        
+
         if (moduleImport) {
           console.log('🧪 Step 2: Module imported successfully');
-          
+
           // Try to access module functions
           console.log('🧪 Step 3: Checking module functions...');
-          const hasCheckMethod = typeof moduleImport.checkLiveActivitySupport === 'function';
-          basicResults.directTestError = `Has check method: ${hasCheckMethod}`;
-          
-          if (hasCheckMethod) {
-            console.log('🧪 Step 4: Calling checkLiveActivitySupport...');
+          const hasEnabledMethod = typeof moduleImport.areActivitiesEnabled === 'function';
+          basicResults.directTestError = `Has areActivitiesEnabled: ${hasEnabledMethod}`;
+
+          if (hasEnabledMethod) {
+            console.log('🧪 Step 4: Calling areActivitiesEnabled...');
             try {
-              const support = await moduleImport.checkLiveActivitySupport();
-              basicResults.directTestError = `Success: ${JSON.stringify(support)}`;
+              const enabled = await moduleImport.areActivitiesEnabled();
+              basicResults.directTestError = `areActivitiesEnabled: ${enabled}`;
             } catch (methodError) {
               basicResults.directTestError = `Method error: ${String(methodError)}`;
             }
