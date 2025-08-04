@@ -1,8 +1,27 @@
-import { NativeModulesProxy } from 'expo-modules-core';
+import { requireNativeModule, NativeModulesProxy } from 'expo-modules-core';
 
-// Import the native module. On web, it will be resolved to a web-specific implementation
-// and on native platforms to the native implementation.
-export default NativeModulesProxy.LiveActivityControl ?? {
+export type LiveActivityResult = {
+  success: boolean;
+  message: string;
+  activityId?: string;
+  elapsedTime?: number;
+};
+
+export interface LiveActivityControlModule {
+  startActivity(sideOrName: string, babyNameOrIcon?: string): Promise<LiveActivityResult>;
+  endActivity(): Promise<LiveActivityResult>;
+  updateActivity(side: string): Promise<LiveActivityResult>;
+  pauseActivity(activityId?: string): Promise<LiveActivityResult>;
+  resumeActivity(activityId?: string): Promise<LiveActivityResult>;
+  completeActivity(activityId?: string): Promise<LiveActivityResult>;
+  areActivitiesEnabled(): Promise<boolean>;
+}
+
+// Native implementation for iOS/Android
+const LiveActivityNative = requireNativeModule<LiveActivityControlModule>('LiveActivityControl');
+
+// Fallback implementation for unsupported platforms (e.g., web)
+export default LiveActivityNative ?? {
   async startActivity(side: string, babyName?: string) {
     return {
       success: false,
