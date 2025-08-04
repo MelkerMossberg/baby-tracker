@@ -8,6 +8,4 @@ public struct NursingActivityAttributes: ActivityAttributes {
         let startTime: Date
         let isActive: Bool
     }
-    
-    public typealias ContentState = ContentState
 }

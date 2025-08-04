@@ -49,8 +49,6 @@ public struct NursingActivityAttributes: ActivityAttributes {
             return pausedAt == nil
         }
     }
-    
-    public typealias ContentState = ContentState
-    
+
     public init() {}
 }
