@@ -23,6 +23,7 @@ export default {
     infoPlist: {
       NSSupportsLiveActivities: true,
       NSSupportsLiveActivitiesFrequentUpdates: true,
+      NSLiveActivityUsageDescription: 'Shows nursing session timers on the Lock Screen.',
       ITSAppUsesNonExemptEncryption: false
     },
     entitlements: {

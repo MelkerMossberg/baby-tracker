@@ -2,8 +2,9 @@
 module.exports = {
   type: 'widget',
   name: 'BabyTrackerActivity',
-  frameworks: ['SwiftUI', 'ActivityKit', 'Foundation'],
+  frameworks: ['SwiftUI', 'ActivityKit', 'AppIntents', 'Foundation'],
   entitlements: {
     "aps-environment": "development"
   },
+  deploymentTarget: '17.0',
 };

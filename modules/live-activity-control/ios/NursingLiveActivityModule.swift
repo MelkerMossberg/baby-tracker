@@ -56,7 +56,6 @@ public class NursingLiveActivityModule: Module {
         let startTime = Date()
         self.startedAt = startTime
         self.pausedAt = nil
-        self.currentActivityId = UUID().uuidString
         
         let contentState = NursingActivityAttributes.ContentState(
             activityName: activityName,
@@ -74,6 +73,7 @@ public class NursingLiveActivityModule: Module {
             )
             
             self.currentActivity = activity
+            self.currentActivityId = activity.id
             
             // Send update to JS
             sendEvent("onLiveActivityUpdate", [

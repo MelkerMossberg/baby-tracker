@@ -38,7 +38,7 @@ struct BabyTrackerActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack {
                         if context.state.isRunning() {
-                            Text(context.state.startedAt, style: .timer)
+                            Text(timerInterval: context.state.startedAt...context.state.getFutureDate())
                                 .font(.system(.title3, design: .monospaced))
                                 .foregroundColor(.primary)
                         } else {
@@ -80,7 +80,7 @@ struct BabyTrackerActivity: Widget {
                     .font(.title3)
             } compactTrailing: {
                 if context.state.isRunning() {
-                    Text(context.state.startedAt, style: .timer)
+                    Text(timerInterval: context.state.startedAt...context.state.getFutureDate())
                         .font(.system(.caption, design: .monospaced))
                         .foregroundColor(.primary)
                 } else {
@@ -112,7 +112,7 @@ struct LockScreenLiveActivityView: View {
                         .foregroundColor(.primary)
                     
                     if context.state.isRunning() {
-                        Text(context.state.startedAt, style: .timer)
+                        Text(timerInterval: context.state.startedAt...context.state.getFutureDate())
                             .font(.system(.subheadline, design: .monospaced))
                             .foregroundColor(.primary)
                     } else {

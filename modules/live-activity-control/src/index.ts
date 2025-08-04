@@ -1,4 +1,7 @@
+import { EventEmitter } from 'expo-modules-core';
 import LiveActivityControlModule from './LiveActivityControlModule';
+
+const emitter = new EventEmitter<any>(LiveActivityControlModule as any);
 
 // Legacy compatibility functions
 export async function startActivity(side: 'left' | 'right', babyName?: string): Promise<{
@@ -61,4 +64,16 @@ export async function completeActivity(activityId?: string): Promise<{
 }
 
 export { LiveActivityControlModule };
+
+export function addLiveActivityUpdateListener(listener: (event: any) => void) {
+  return emitter.addListener('onLiveActivityUpdate', listener);
+}
+
+export function addWidgetCompleteActivityListener(listener: (event: any) => void) {
+  return emitter.addListener('onWidgetCompleteActivity', listener);
+}
+
+export function addTimerUpdateListener(listener: (event: any) => void) {
+  return emitter.addListener('sendTimerUpdateEvent', listener);
+}
 
