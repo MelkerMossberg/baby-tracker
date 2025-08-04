@@ -1,0 +1,21 @@
+{
+  "name": "live-activity-control",
+  "version": "1.0.0",
+  "description": "Expo module for controlling Live Activities",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "live-activities"
+  ],
+  "repository": "https://github.com/expo/expo",
+  "author": "expo",
+  "license": "MIT",
+  "dependencies": {
+    "live-activity-control": "file:live-activity-control-1.0.0.tgz"
+  }
+}
