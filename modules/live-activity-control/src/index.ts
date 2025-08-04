@@ -1,4 +1,3 @@
-import { NativeModulesProxy } from 'expo-modules-core';
 import LiveActivityControlModule from './LiveActivityControlModule';
 
 // Legacy compatibility functions
@@ -62,3 +61,4 @@ export async function completeActivity(activityId?: string): Promise<{
 }
 
 export { LiveActivityControlModule };
+
