@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Image, ScrollView, Alert, Dimensions } fr
 import Toast from 'react-native-toast-message';
 import { eventTracker, initializeDummyData } from '../services';
 import { notificationService } from '../services/notificationService';
-import { liveActivityService } from '../services/liveActivityService';
 import { Event, EventType, NursingSide, BabyProfile } from '../types';
 import { formatDuration } from '../utils/time';
 import { getEventDisplayName } from '../utils/events';
@@ -289,15 +288,11 @@ export default function HomeScreen() {
       setCurrentNursingSide(side);
       setElapsedTime('0m');
       
-      // Start Live Activity
-      console.log('🍼 [DEMO] Starting Live Activity for nursing session');
-      const liveActivityStarted = await liveActivityService.startNursingActivity(side, activeBaby.name);
-      console.log('🍼 [DEMO] Live Activity result:', liveActivityStarted);
       
       Toast.show({
         type: 'success',
         text1: 'Nursing Started',
-        text2: `Timer is now running (${side})${liveActivityStarted ? ' • Live Activity active' : ''}`
+        text2: `Timer is now running (${side})`
       });
     } catch (error) {
       console.error('Error starting nursing session:', error);
@@ -307,8 +302,6 @@ export default function HomeScreen() {
 
   const handleNursingSave = async (side: NursingSide, notes: string, durationSeconds: number) => {
     try {
-      // Stop Live Activity first
-      await liveActivityService.stopNursingActivity();
       
       // Get the last created event (nursing session was already stopped when "Stop" was pressed)
       const event = eventTracker.getLastCreatedEvent();
@@ -531,8 +524,6 @@ export default function HomeScreen() {
       eventTracker.switchNursingSide(newSide);
       setCurrentNursingSide(newSide);
       
-      // Update Live Activity with new side
-      await liveActivityService.updateNursingSide(newSide);
       
       Toast.show({
         type: 'success',
@@ -559,7 +550,6 @@ export default function HomeScreen() {
       try {
         await eventTracker.stopNursingSession();
         setIsNursingInProgress(false);
-        // Note: Live Activity will be stopped when user saves or cancels in the modal
       } catch (error) {
         console.error('Error stopping nursing session:', error);
       }
@@ -1059,8 +1049,6 @@ export default function HomeScreen() {
       <NursingModal
         visible={showNursingModal}
         onClose={() => {
-          // Stop Live Activity if user cancels
-          liveActivityService.stopNursingActivity();
           setShowNursingModal(false);
         }}
         onSave={handleNursingSave}

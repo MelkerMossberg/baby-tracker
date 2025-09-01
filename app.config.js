@@ -21,8 +21,6 @@ export default {
     bundleIdentifier: "com.melkermossberg.babytracker",
     appleTeamId: process.env.APPLE_TEAM_ID,
     infoPlist: {
-      NSSupportsLiveActivities: true,
-      NSSupportsLiveActivitiesFrequentUpdates: true,
       ITSAppUsesNonExemptEncryption: false
     },
     entitlements: {
@@ -45,6 +43,6 @@ export default {
       }
   },
   plugins: [
-    "@bacons/apple-targets"
+    "expo-router"
   ]
 };
